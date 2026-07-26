@@ -1,0 +1,57 @@
+# Growlogue
+
+> 今日の行動を、成長物語へ。
+
+日々の小さな行動をXPと能力値へ変換し、自分自身を主人公として育てる
+モバイルファーストの人生RPGです。
+
+## 必要環境
+
+- Node.js 24.14.0
+- pnpm 11.9.0
+- Cloudflareアカウント（本番公開時のみ）
+
+## ローカルセットアップ
+
+```bash
+pnpm install
+cp apps/web/.env.example apps/web/.dev.vars
+pnpm db:generate
+pnpm db:migrate:local
+pnpm dev
+```
+
+`apps/web/.dev.vars`の`OWNER_EMAIL`を本人のメールアドレスへ変更し、
+`BETTER_AUTH_SECRET`には32文字以上のランダム値を設定します。このファイルはGitの対象外です。
+
+`http://localhost:3000`を開きます。Cloudflare互換ランタイムでの確認は
+`pnpm preview`を使用します。
+
+## 環境変数
+
+| 変数 | 必須 | 用途 |
+|---|---|---|
+| `OWNER_EMAIL` | 必須 | 初回登録を許可する本人メール |
+| `BETTER_AUTH_SECRET` | 必須 | セッション署名用Secret（32文字以上） |
+| `BETTER_AUTH_URL` | 必須 | 認証APIの公開オリジン |
+| `NEXT_PUBLIC_APP_URL` | 必須 | Webアプリの公開オリジン |
+
+本番値は`.dev.vars`から転記せず、Workers Secretsへ個別に登録します。
+
+## 検証
+
+```bash
+pnpm verify
+```
+
+## デプロイ
+
+本番リソースと秘密情報を確認した後に、D1 migrationを適用してからデプロイします。
+
+```bash
+pnpm --filter @growlogue/web exec wrangler d1 migrations apply growlogue-db --remote
+pnpm deploy
+```
+
+秘密情報はソースや`wrangler.jsonc`に書かず、`wrangler secret put`で登録します。
+公開前後の確認事項は[`docs/deployment-runbook.md`](docs/deployment-runbook.md)にまとめています。
