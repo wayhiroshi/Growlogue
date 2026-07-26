@@ -2,6 +2,8 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "growlogue",
   "main": ".open-next/worker.js",
+  "workers_dev": true,
+  "preview_urls": false,
   "compatibility_date": "2026-07-26",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
