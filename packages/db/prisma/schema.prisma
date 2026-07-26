@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+  runtime  = "cloudflare"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                     String                 @id
+  name                   String
+  email                  String                 @unique
+  emailVerified          Boolean                @default(false)
+  image                  String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  sessions               Session[]
+  accounts               Account[]
+  profile                Profile?
+  habits                 Habit[]
+  dailyMissions          DailyMission[]
+  activityEvents         ActivityEvent[]
+  xpLedger               XpLedger[]
+  progress               UserProgress?
+  statusProgress         StatusProgress[]
+  streak                 Streak?
+  achievements           UserAchievement[]
+  pushSubscriptions      PushSubscription[]
+  notificationDeliveries NotificationDelivery[]
+  weeklyReports          WeeklyReport[]
+  shareLinks             ShareLink[]
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model Profile {
+  id                String   @id
+  userId            String   @unique
+  timezone          String   @default("Asia/Tokyo")
+  resetHour         Int      @default(4)
+  activeWorldId     String?
+  onboardingDone    Boolean  @default(false)
+  notificationLevel String   @default("ACTIVE")
+  quietHoursStart   String   @default("23:30")
+  quietHoursEnd     String   @default("08:00")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activeWorld       World?   @relation(fields: [activeWorldId], references: [id])
+}
+
+model World {
+  id                    String                 @id
+  slug                  String                 @unique
+  name                  String
+  description           String
+  xpLabel               String                 @default("XP")
+  isPremium             Boolean                @default(false)
+  characters            Character[]
+  profiles              Profile[]
+  notificationTemplates NotificationTemplate[]
+}
+
+model Character {
+  id                    String                 @id
+  worldId               String
+  name                  String
+  personality           String
+  avatarUrl             String?
+  world                 World                  @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  states                CharacterState[]
+  notificationTemplates NotificationTemplate[]
+}
+
+model CharacterState {
+  id          String    @id
+  userId      String    @unique
+  characterId String
+  mood        String    @default("CALM")
+  moodScore   Int       @default(50)
+  updatedAt   DateTime  @updatedAt
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id         String  @id
+  key        String  @unique
+  name       String
+  statusName String
+  icon       String
+  habits     Habit[]
+}
+
+model Habit {
+  id             String              @id
+  userId         String
+  categoryId     String
+  title          String
+  worldTitle     String
+  minimumRule    String
+  normalRule     String?
+  bonusRule      String?
+  baseXp         Int                 @default(10)
+  isActive       Boolean             @default(true)
+  scheduleRule   String              @default("DAILY")
+  preferredOrder Int                 @default(100)
+  preferredTime  String?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category       Category            @relation(fields: [categoryId], references: [id])
+  statusWeights  HabitStatusWeight[]
+  dailyMissions  DailyMission[]
+
+  @@index([userId, isActive])
+}
+
+model HabitStatusWeight {
+  id        String @id
+  habitId   String
+  statusKey String
+  weight    Int    @default(1)
+  habit     Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, statusKey])
+}
+
+model DailyMission {
+  id          String          @id
+  userId      String
+  habitId     String
+  gameDate    String
+  role        String
+  position    Int
+  status      String          @default("PENDING")
+  xpSnapshot  Int
+  completedAt DateTime?
+  createdAt   DateTime        @default(now())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit       Habit           @relation(fields: [habitId], references: [id])
+  events      ActivityEvent[]
+
+  @@unique([userId, gameDate, habitId])
+  @@index([userId, gameDate, position])
+}
+
+model ActivityEvent {
+  id                String                 @id
+  userId            String
+  dailyMissionId    String
+  type              String
+  idempotencyKey    String
+  reversalOfEventId String?
+  gameDate          String
+  createdAt         DateTime               @default(now())
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyMission      DailyMission           @relation(fields: [dailyMissionId], references: [id])
+  xpEntries         XpLedger[]
+  projection        ProjectionApplication?
+
+  @@unique([userId, idempotencyKey])
+  @@unique([reversalOfEventId])
+  @@index([dailyMissionId, type])
+}
+
+model XpLedger {
+  id        String        @id
+  userId    String
+  eventId   String
+  amount    Int
+  reason    String
+  statusKey String
+  gameDate  String
+  createdAt DateTime      @default(now())
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     ActivityEvent @relation(fields: [eventId], references: [id])
+
+  @@unique([eventId, reason])
+  @@index([userId, gameDate])
+}
+
+model ProjectionApplication {
+  eventId   String        @id
+  appliedAt DateTime      @default(now())
+  event     ActivityEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model UserProgress {
+  userId          String   @id
+  totalXp         Int      @default(0)
+  dailyClearCount Int      @default(0)
+  perfectCount    Int      @default(0)
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model StatusProgress {
+  id        String   @id
+  userId    String
+  statusKey String
+  xp        Int      @default(0)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, statusKey])
+}
+
+model Streak {
+  userId            String   @id
+  currentDays       Int      @default(0)
+  longestDays       Int      @default(0)
+  lastClearGameDate String?
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id          String            @id
+  name        String
+  description String
+  condition   String
+  badgeUrl    String?
+  users       UserAchievement[]
+}
+
+model UserAchievement {
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@id([userId, achievementId])
+}
+
+model NotificationTemplate {
+  id           String     @id
+  worldId      String
+  characterId  String?
+  triggerType  String
+  mood         String
+  textTemplate String
+  severity     Int        @default(1)
+  world        World      @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  character    Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+}
+
+model PushSubscription {
+  id        String   @id
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model NotificationDelivery {
+  id          String   @id
+  userId      String
+  triggerType String
+  gameDate    String
+  habitId     String?
+  deliveredAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, triggerType, gameDate, habitId])
+}
+
+model WeeklyReport {
+  id          String   @id
+  userId      String
+  weekStart   String
+  summaryJson String
+  imageKey    String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+}
+
+model ShareLink {
+  id          String    @id
+  userId      String
+  tokenHash   String    @unique
+  reportId    String?
+  permissions String
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
