@@ -5,25 +5,25 @@
 - Cloudflare account: 公開直前の`wrangler whoami`で確認する
 - Worker: `growlogue`
 - D1: `growlogue-db`
-- R2: `growlogue-assets`
 - 公開先: `workers.dev`
+- R2: Phase 4の共有カード実装時に`growlogue-assets`を作成する
 
 ## 公開前ゲート
 
 1. CloudflareのログインメールとAccount IDを読み取り確認する。
-2. 同名のWorker、D1、R2が存在しないか確認する。
-3. R2が未有効の場合は、料金と請求先への影響を確認して明示承認を得る。
-4. `OWNER_EMAIL`、公開URL、Secretの保存先を確認する。
-5. `pnpm verify`とOpenNext buildを再実行する。
+2. 同名のWorkerとD1が存在しないか確認する。
+3. `OWNER_EMAIL`、公開URL、Secretの保存先を確認する。
+4. `pnpm verify`とOpenNext buildを再実行する。
 
 ## 作成と公開
 
 1. D1を作成し、返されたIDをWebとschedulerの`wrangler.jsonc`へ設定する。
-2. R2を作成し、Webのbinding名`ASSET_BUCKET`へ接続する。
-3. `OWNER_EMAIL`、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`をWorkers Secretsへ登録する。
-4. remote D1 migrationを適用する。
-5. OpenNext Workerを公開する。
-6. 公開URLを`BETTER_AUTH_URL`へ設定し、必要なら再公開する。
+2. `OWNER_EMAIL`、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`をWorkers Secretsへ登録する。
+3. remote D1 migrationを適用する。
+4. OpenNext Workerを公開する。
+5. 公開URLを`BETTER_AUTH_URL`へ設定し、必要なら再公開する。
+
+R2はPhase 1〜3では使用しない。共有カード画像の保存が必要になるPhase 4で、利用料金と権限を再確認してから追加する。
 
 ## 検証
 

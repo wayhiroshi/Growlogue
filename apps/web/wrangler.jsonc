@@ -16,12 +16,6 @@
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "ASSET_BUCKET",
-      "bucket_name": "growlogue-assets"
-    }
-  ],
   "secrets": {
     "required": ["OWNER_EMAIL", "BETTER_AUTH_SECRET", "BETTER_AUTH_URL"]
   },

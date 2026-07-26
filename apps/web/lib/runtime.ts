@@ -7,7 +7,6 @@ export function getRuntime() {
     env,
     ctx,
     db: env.DB,
-    bucket: env.ASSET_BUCKET,
     prisma: createPrisma(env.DB)
   };
 }

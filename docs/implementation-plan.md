@@ -10,7 +10,7 @@ pnpm workspace、Next.js、OpenNext、Cloudflare Workers、D1、Prisma、テス�
 
 ## Phase 2: 本人用本番
 
-Cloudflareの対象アカウントを確認し、D1・R2・Workerを作成して`workers.dev`へ公開する。
+Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`workers.dev`へ公開する。R2は共有カードを実装するPhase 4で追加する。
 
 ## 完了判定
 
