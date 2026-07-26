@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "growlogue-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "9459b29a-5c9c-4b15-a30a-3481659063c3",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
