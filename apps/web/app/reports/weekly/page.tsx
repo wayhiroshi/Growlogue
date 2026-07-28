@@ -3,6 +3,7 @@ import { WeeklyReportClient } from "@/components/weekly-report-client";
 import { Suspense } from "react";
 
 export const metadata = { title: "週間レポート" };
+export const dynamic = "force-dynamic";
 
 export default function WeeklyReportPage() {
   return (
