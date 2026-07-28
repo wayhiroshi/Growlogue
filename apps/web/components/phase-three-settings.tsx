@@ -23,6 +23,18 @@ function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {
   return bytes;
 }
 
+function arrayBufferToUrlBase64(value: ArrayBuffer | null): string {
+  if (!value) throw new Error("PUSH_KEYS_UNAVAILABLE");
+  const bytes = new Uint8Array(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return window
+    .btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
 export function PhaseThreeSettings({
   initialMode,
   initialNotificationLevel,
@@ -123,37 +135,68 @@ export function PhaseThreeSettings({
 
     setPending(true);
     setMessage("");
+    let stage:
+      | "permission"
+      | "config"
+      | "service-worker"
+      | "subscription"
+      | "save" = "permission";
     try {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         setMessage("通知が許可されていません。端末の設定をご確認ください。");
         return;
       }
-      const [{ publicKey }, registration] = await Promise.all([
-        fetch("/api/v1/push/config").then((response) => {
-          if (!response.ok) throw new Error("PUSH_CONFIG_FAILED");
-          return response.json() as Promise<{ publicKey: string }>;
-        }),
-        navigator.serviceWorker.register("/sw.js", { scope: "/" })
-      ]);
-      const ready = await navigator.serviceWorker.ready;
-      const existing = await ready.pushManager.getSubscription();
+      stage = "config";
+      const configResponse = await fetch("/api/v1/push/config");
+      if (!configResponse.ok) throw new Error("PUSH_CONFIG_FAILED");
+      const { publicKey } = (await configResponse.json()) as {
+        publicKey: string;
+      };
+      if (!publicKey) throw new Error("PUSH_CONFIG_MISSING");
+
+      stage = "service-worker";
+      const registration = await navigator.serviceWorker.register("/sw.js", {
+        scope: "/"
+      });
+      await navigator.serviceWorker.ready;
+
+      stage = "subscription";
+      const existing = await registration.pushManager.getSubscription();
       const subscription =
         existing ??
-        (await ready.pushManager.subscribe({
+        (await registration.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(publicKey)
         }));
+
+      stage = "save";
       const response = await fetch("/api/v1/push/subscriptions", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(subscription.toJSON())
+        body: JSON.stringify({
+          endpoint: subscription.endpoint,
+          expirationTime: subscription.expirationTime ?? null,
+          keys: {
+            p256dh: arrayBufferToUrlBase64(subscription.getKey("p256dh")),
+            auth: arrayBufferToUrlBase64(subscription.getKey("auth"))
+          }
+        })
       });
       if (!response.ok) throw new Error("PUSH_SUBSCRIPTION_FAILED");
       await registration.update();
       setMessage("この端末への通知を有効にしました。");
     } catch {
-      setMessage("通知を有効にできませんでした。端末の設定をご確認ください。");
+      const messages = {
+        permission: "通知許可を確認できませんでした。端末の設定をご確認ください。",
+        config: "通知設定を取得できませんでした。通信状態をご確認ください。",
+        "service-worker":
+          "通知機能を準備できませんでした。Growlogueを終了して、もう一度開いてください。",
+        subscription:
+          "iPhoneの通知サービスへ登録できませんでした。通信状態と通知設定をご確認ください。",
+        save: "通知情報をGrowlogueへ保存できませんでした。もう一度お試しください。"
+      };
+      setMessage(messages[stage]);
     } finally {
       setPending(false);
     }

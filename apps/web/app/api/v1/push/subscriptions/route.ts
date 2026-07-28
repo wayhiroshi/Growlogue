@@ -8,7 +8,7 @@ const endpoint = z.string().url().max(2048).refine((value) => {
 
 const subscriptionSchema = z.object({
   endpoint,
-  expirationTime: z.number().nonnegative().nullable(),
+  expirationTime: z.number().nonnegative().nullable().optional().default(null),
   keys: z.object({
     p256dh: z.string().min(16).max(512),
     auth: z.string().min(8).max(256)
