@@ -2,6 +2,7 @@ import { AppNav } from "@/components/app-nav";
 import { categories } from "@growlogue/content";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
 import { requireSession } from "@/lib/session";
+import Link from "next/link";
 
 export const metadata = { title: "能力値" };
 export const dynamic = "force-dynamic";
@@ -55,6 +56,12 @@ export default async function StatusPage() {
           );
         })}
       </section>
+      <Link
+        className="button-secondary mt-5 w-full"
+        href="/reports/weekly"
+      >
+        週間レポートを見る
+      </Link>
       <AppNav />
     </main>
   );
