@@ -1,5 +1,5 @@
 import { AppNav } from "@/components/app-nav";
-import { WishManager } from "@/components/wish-manager";
+import { WishManagerLoader } from "@/components/wish-manager-loader";
 import { listWishes } from "@/lib/life-unlocks-service";
 import { requireSession } from "@/lib/session";
 
@@ -16,7 +16,7 @@ export default async function WishesPage() {
       <p className="mt-2 mb-6 text-sm leading-6 text-[#667269]">
         ゲーム内のアイテムではなく、現実で叶えたい出来事を解放します。
       </p>
-      <WishManager wishes={wishes} />
+      <WishManagerLoader wishes={wishes} />
       <AppNav />
     </main>
   );

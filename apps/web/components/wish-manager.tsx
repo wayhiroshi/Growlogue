@@ -18,7 +18,7 @@ interface ConditionView {
   completed: boolean;
 }
 
-interface WishView {
+export interface WishView {
   id: string;
   title: string;
   description: string | null;
