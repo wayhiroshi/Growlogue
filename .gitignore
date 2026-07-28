@@ -14,4 +14,3 @@ generated/
 !.env.example
 .dev.vars
 .DS_Store
-apps/web/public/sw.js

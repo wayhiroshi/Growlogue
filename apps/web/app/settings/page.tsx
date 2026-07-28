@@ -1,14 +1,19 @@
 import { AppNav } from "@/components/app-nav";
+import { PhaseThreeSettings } from "@/components/phase-three-settings";
 import { SignOutButton } from "@/components/sign-out-button";
-import { ensureUserFoundation } from "@/lib/game-service";
+import { ensureUserFoundation, getTodayMode } from "@/lib/game-service";
 import { requireSession } from "@/lib/session";
+import type { NotificationLevel } from "@growlogue/domain";
 
 export const metadata = { title: "設定" };
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await requireSession();
-  const profile = await ensureUserFoundation(session.user.id);
+  const [profile, todayMode] = await Promise.all([
+    ensureUserFoundation(session.user.id),
+    getTodayMode(session.user.id)
+  ]);
   return (
     <main className="app-shell">
       <p className="eyebrow">Preferences</p>
@@ -19,7 +24,7 @@ export default async function SettingsPage() {
           ["世界観", "英国紳士"],
           ["タイムゾーン", profile.timezone],
           ["1日の切替", `午前${profile.resetHour}時`],
-          ["通知レベル", "積極的（Phase 3で有効化）"]
+          ["通知レベル", profile.notificationLevel]
         ].map(([label, value]) => (
           <div className="flex items-center justify-between gap-4 p-4" key={label}>
             <span className="text-sm font-bold">{label}</span>
@@ -27,6 +32,14 @@ export default async function SettingsPage() {
           </div>
         ))}
       </section>
+      <PhaseThreeSettings
+        initialMode={todayMode.mode}
+        initialNotificationLevel={
+          profile.notificationLevel as NotificationLevel
+        }
+        initialQuietHoursStart={profile.quietHoursStart}
+        initialQuietHoursEnd={profile.quietHoursEnd}
+      />
       <SignOutButton />
       <AppNav />
     </main>

@@ -10,10 +10,13 @@ import {
   revertMissionAtomically
 } from "@growlogue/db";
 import {
+  calculateStreaks,
   evaluateDailyProgress,
   getGameDate,
   levelFromXp,
-  selectDailyMissions
+  selectButlerMood,
+  selectDailyMissions,
+  type DayMode
 } from "@growlogue/domain";
 import { getRuntime } from "./runtime";
 
@@ -203,10 +206,16 @@ export async function ensureTodayMissions(userId: string, now = new Date()) {
 
 async function recomputeProjections(userId: string) {
   const { prisma } = getRuntime();
-  const missions = await prisma.dailyMission.findMany({
-    where: { userId },
-    orderBy: [{ gameDate: "asc" }, { position: "asc" }]
-  });
+  const [missions, dailyModes] = await Promise.all([
+    prisma.dailyMission.findMany({
+      where: { userId },
+      orderBy: [{ gameDate: "asc" }, { position: "asc" }]
+    }),
+    prisma.dailyMode.findMany({
+      where: { userId, mode: { not: "NORMAL" } },
+      select: { gameDate: true }
+    })
+  ]);
   const grouped = new Map<string, typeof missions>();
   for (const mission of missions) {
     const group = grouped.get(mission.gameDate) ?? [];
@@ -227,21 +236,10 @@ async function recomputeProjections(userId: string) {
     if (result.isPerfect) perfectCount += 1;
   }
 
-  let longest = 0;
-  let run = 0;
-  let previous: string | null = null;
-  for (const date of clearDates) {
-    const distance = previous
-      ? Math.round(
-          (Date.parse(`${date}T00:00:00Z`) -
-            Date.parse(`${previous}T00:00:00Z`)) /
-            86_400_000
-        )
-      : 0;
-    run = previous && distance === 1 ? run + 1 : 1;
-    longest = Math.max(longest, run);
-    previous = date;
-  }
+  const streaks = calculateStreaks(
+    clearDates,
+    new Set(dailyModes.map((mode) => mode.gameDate))
+  );
 
   await prisma.userProgress.update({
     where: { userId },
@@ -253,9 +251,9 @@ async function recomputeProjections(userId: string) {
   await prisma.streak.update({
     where: { userId },
     data: {
-      currentDays: run,
-      longestDays: longest,
-      lastClearGameDate: clearDates.at(-1) ?? null
+      currentDays: streaks.currentDays,
+      longestDays: streaks.longestDays,
+      lastClearGameDate: streaks.lastClearGameDate
     }
   });
 }
@@ -281,13 +279,15 @@ export async function mutateMission(
   return result;
 }
 
-function chooseMood(
-  daily: ReturnType<typeof evaluateDailyProgress>
-): ButlerMood {
-  if (daily.isPerfect) return "DELIGHTED";
-  if (daily.isDailyClear) return "PROUD";
-  if (daily.totalCompleted >= 1) return "CHEERFUL";
-  return "CALM";
+function distanceInDays(from: string, to: string): number {
+  return Math.max(
+    0,
+    Math.round(
+      (Date.parse(`${to}T00:00:00.000Z`) -
+        Date.parse(`${from}T00:00:00.000Z`)) /
+        86_400_000
+    )
+  );
 }
 
 export async function getDashboard(userId: string) {
@@ -299,18 +299,57 @@ export async function getDashboard(userId: string) {
       status: mission.status === "COMPLETED" ? "COMPLETED" : "PENDING"
     }))
   );
-  const [progress, streak, statuses] = await Promise.all([
-    prisma.userProgress.findUniqueOrThrow({ where: { userId } }),
-    prisma.streak.findUniqueOrThrow({ where: { userId } }),
-    prisma.statusProgress.findMany({
-      where: { userId },
-      orderBy: { xp: "desc" }
-    })
-  ]);
-  const mood = chooseMood(daily);
+  const [progress, streak, statuses, dailyMode, lastActivity] =
+    await Promise.all([
+      prisma.userProgress.findUniqueOrThrow({ where: { userId } }),
+      prisma.streak.findUniqueOrThrow({ where: { userId } }),
+      prisma.statusProgress.findMany({
+        where: { userId },
+        orderBy: { xp: "desc" }
+      }),
+      prisma.dailyMode.findUnique({
+        where: { userId_gameDate: { userId, gameDate } }
+      }),
+      prisma.activityEvent.findFirst({
+        where: { userId, type: "COMPLETE" },
+        orderBy: { createdAt: "desc" },
+        select: { gameDate: true }
+      })
+    ]);
+  const dayMode = (dailyMode?.mode ?? "NORMAL") as DayMode;
+  const mood = selectButlerMood({
+    coreCompleted: daily.coreCompleted,
+    totalCompleted: daily.totalCompleted,
+    totalMissions: daily.totalMissions,
+    inactiveDays: lastActivity
+      ? distanceInDays(lastActivity.gameDate, gameDate)
+      : 0,
+    dayMode
+  }) as ButlerMood;
+  await prisma.characterState.update({
+    where: { userId },
+    data: {
+      mood,
+      moodScore:
+        mood === "DELIGHTED"
+          ? 100
+          : mood === "PROUD"
+            ? 85
+            : mood === "CHEERFUL"
+              ? 70
+              : mood === "CALM"
+                ? 50
+                : mood === "WORRIED"
+                  ? 40
+                  : mood === "LONELY"
+                    ? 25
+                    : 15
+    }
+  });
 
   return {
     gameDate,
+    dayMode,
     missions,
     daily,
     progress: {
@@ -325,6 +364,41 @@ export async function getDashboard(userId: string) {
       message: butlerMessages[mood][0]
     }
   };
+}
+
+export async function getTodayMode(userId: string, now = new Date()) {
+  const { prisma } = getRuntime();
+  const profile = await ensureUserFoundation(userId);
+  const gameDate = getGameDate(now, profile.timezone, profile.resetHour);
+  const dailyMode = await prisma.dailyMode.findUnique({
+    where: { userId_gameDate: { userId, gameDate } }
+  });
+  return {
+    gameDate,
+    mode: (dailyMode?.mode ?? "NORMAL") as DayMode
+  };
+}
+
+export async function setTodayMode(
+  userId: string,
+  mode: DayMode,
+  now = new Date()
+) {
+  const { prisma } = getRuntime();
+  const profile = await ensureUserFoundation(userId);
+  const gameDate = getGameDate(now, profile.timezone, profile.resetHour);
+  const dailyMode = await prisma.dailyMode.upsert({
+    where: { userId_gameDate: { userId, gameDate } },
+    update: { mode },
+    create: {
+      id: crypto.randomUUID(),
+      userId,
+      gameDate,
+      mode
+    }
+  });
+  await recomputeProjections(userId);
+  return dailyMode;
 }
 
 export async function listHabits(userId: string) {

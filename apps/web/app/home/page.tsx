@@ -7,6 +7,14 @@ import { redirect } from "next/navigation";
 export const metadata = { title: "今日のミッション" };
 export const dynamic = "force-dynamic";
 
+const dayModeLabels = {
+  NORMAL: null,
+  HOLIDAY: "休日モード",
+  SICK: "体調不良モード",
+  BUSY: "忙しい日モード",
+  REST: "完全休息日"
+} as const;
+
 export default async function HomePage() {
   const session = await requireSession();
   const profile = await ensureUserFoundation(session.user.id);
@@ -31,6 +39,12 @@ export default async function HomePage() {
           <strong className="text-2xl">{dashboard.progress.level}</strong>
         </div>
       </header>
+
+      {dayModeLabels[dashboard.dayMode] ? (
+        <p className="mb-4 rounded-full bg-[#d8e5dc] px-4 py-2 text-center text-sm font-bold text-[#173f35]">
+          {dayModeLabels[dashboard.dayMode]} — 無理のない一日を守ります
+        </p>
+      ) : null}
 
       <section className="card mb-5 overflow-hidden">
         <div className="flex items-center gap-4 p-5">

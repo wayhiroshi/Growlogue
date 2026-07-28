@@ -17,5 +17,5 @@
     "**/*.tsx",
     "worker-configuration.d.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next/types/**/* [0-9].ts"]
 }
