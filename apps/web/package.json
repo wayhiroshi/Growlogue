@@ -19,6 +19,7 @@
     "@growlogue/content": "workspace:*",
     "@growlogue/db": "workspace:*",
     "@growlogue/domain": "workspace:*",
+    "@growlogue/life-unlocks": "workspace:*",
     "@opennextjs/cloudflare": "1.20.2",
     "better-auth": "1.6.25",
     "next": "16.2.12",

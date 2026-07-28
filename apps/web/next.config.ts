@@ -11,7 +11,8 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@growlogue/content",
     "@growlogue/db",
-    "@growlogue/domain"
+    "@growlogue/domain",
+    "@growlogue/life-unlocks"
   ]
 };
 
