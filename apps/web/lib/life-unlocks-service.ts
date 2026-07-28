@@ -72,32 +72,50 @@ function normalizeScope(
 }
 
 async function loadFacts(userId: string): Promise<MetricFact[]> {
-  const { prisma } = getRuntime();
-  const [progress, statuses, streak, completionCount, manualFacts] =
-    await Promise.all([
-      prisma.userProgress.findUnique({
-        where: { userId },
-        select: { totalXp: true }
-      }),
-      prisma.statusProgress.findMany({
-        where: { userId },
-        select: { statusKey: true, xp: true }
-      }),
-      prisma.streak.findUnique({
-        where: { userId },
-        select: { currentDays: true }
-      }),
-      prisma.dailyMission.count({
-        where: { userId, status: "COMPLETED" }
-      }),
-      prisma.conditionFact.findMany({
-        where: {
-          userId,
-          metric: { in: ["MANUAL_NUMBER", "MONEY_AMOUNT"] }
-        },
-        orderBy: [{ observedAt: "desc" }, { createdAt: "desc" }]
-      })
-    ]);
+  const { db } = getRuntime();
+  const results = await db.batch([
+    db
+      .prepare(`SELECT "totalXp" FROM "UserProgress" WHERE "userId" = ?`)
+      .bind(userId),
+    db
+      .prepare(
+        `SELECT "statusKey", "xp" FROM "StatusProgress" WHERE "userId" = ?`
+      )
+      .bind(userId),
+    db
+      .prepare(`SELECT "currentDays" FROM "Streak" WHERE "userId" = ?`)
+      .bind(userId),
+    db
+      .prepare(
+        `SELECT COUNT(*) AS "count" FROM "DailyMission"
+         WHERE "userId" = ? AND "status" = 'COMPLETED'`
+      )
+      .bind(userId),
+    db
+      .prepare(
+        `SELECT "metric", "scopeKey", "value" FROM "ConditionFact"
+         WHERE "userId" = ? AND "metric" IN ('MANUAL_NUMBER', 'MONEY_AMOUNT')
+         ORDER BY "observedAt" DESC, "createdAt" DESC`
+      )
+      .bind(userId)
+  ]);
+  const progress = results[0]?.results[0] as
+    | { totalXp: number }
+    | undefined;
+  const statuses = (results[1]?.results ?? []) as unknown as Array<{
+    statusKey: string;
+    xp: number;
+  }>;
+  const streak = results[2]?.results[0] as
+    | { currentDays: number }
+    | undefined;
+  const completionCount =
+    ((results[3]?.results[0] as { count?: number } | undefined)?.count ?? 0);
+  const manualFacts = (results[4]?.results ?? []) as unknown as Array<{
+    metric: string;
+    scopeKey: string | null;
+    value: number;
+  }>;
 
   const facts: MetricFact[] = [
     {
@@ -183,19 +201,133 @@ function lucienComment(
 
 type WishRow = Awaited<ReturnType<typeof loadWishRow>>;
 
+interface WishDbRow {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  icon: string;
+  priority: number;
+  status: string;
+  unlockDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+interface RewardDbRow {
+  id: string;
+  wishId: string;
+  message: string;
+  unlockedAt: string | null;
+  completedAt: string | null;
+}
+
+interface QuestDbRow {
+  id: string;
+  wishId: string;
+  title: string;
+  description: string | null;
+  position: number;
+}
+
+interface ConditionDbRow {
+  id: string;
+  questId: string;
+  metric: string;
+  operator: string;
+  targetValue: number;
+  baselineValue: number | null;
+  scopeKey: string | null;
+  label: string;
+  unit: string | null;
+  position: number;
+}
+
+interface WishAggregate extends WishDbRow {
+  reward: RewardDbRow | null;
+  quests: Array<QuestDbRow & { conditions: ConditionDbRow[] }>;
+}
+
+function assembleWishes(
+  wishes: WishDbRow[],
+  rewards: RewardDbRow[],
+  quests: QuestDbRow[],
+  conditions: ConditionDbRow[]
+): WishAggregate[] {
+  const conditionsByQuest = new Map<string, ConditionDbRow[]>();
+  for (const condition of conditions) {
+    const entries = conditionsByQuest.get(condition.questId) ?? [];
+    entries.push(condition);
+    conditionsByQuest.set(condition.questId, entries);
+  }
+  const questsByWish = new Map<
+    string,
+    Array<QuestDbRow & { conditions: ConditionDbRow[] }>
+  >();
+  for (const quest of quests) {
+    const entries = questsByWish.get(quest.wishId) ?? [];
+    entries.push({
+      ...quest,
+      conditions: conditionsByQuest.get(quest.id) ?? []
+    });
+    questsByWish.set(quest.wishId, entries);
+  }
+  const rewardByWish = new Map(rewards.map((reward) => [reward.wishId, reward]));
+  return wishes.map((wish) => ({
+    ...wish,
+    reward: rewardByWish.get(wish.id) ?? null,
+    quests: questsByWish.get(wish.id) ?? []
+  }));
+}
+
 async function loadWishRow(userId: string, wishId: string) {
-  return getRuntime().prisma.wish.findFirst({
-    where: { id: wishId, userId },
-    include: {
-      reward: true,
-      quests: {
-        include: {
-          conditions: { orderBy: { position: "asc" } }
-        },
-        orderBy: { position: "asc" }
-      }
-    }
-  });
+  const { db } = getRuntime();
+  const results = await db.batch([
+    db
+      .prepare(
+        `SELECT "id", "title", "description", "category", "icon", "priority",
+                "status", "unlockDate", "completedAt", "createdAt"
+         FROM "Wish" WHERE "id" = ? AND "userId" = ?`
+      )
+      .bind(wishId, userId),
+    db
+      .prepare(
+        `SELECT r."id", r."wishId", r."message", r."unlockedAt", r."completedAt"
+         FROM "Reward" r
+         JOIN "Wish" w ON w."id" = r."wishId"
+         WHERE r."wishId" = ? AND w."userId" = ?`
+      )
+      .bind(wishId, userId),
+    db
+      .prepare(
+        `SELECT q."id", q."wishId", q."title", q."description", q."position"
+         FROM "Quest" q
+         JOIN "Wish" w ON w."id" = q."wishId"
+         WHERE q."wishId" = ? AND w."userId" = ?
+         ORDER BY q."position"`
+      )
+      .bind(wishId, userId),
+    db
+      .prepare(
+        `SELECT c."id", c."questId", c."metric", c."operator",
+                c."targetValue", c."baselineValue", c."scopeKey", c."label",
+                c."unit", c."position"
+         FROM "QuestCondition" c
+         JOIN "Quest" q ON q."id" = c."questId"
+         JOIN "Wish" w ON w."id" = q."wishId"
+         WHERE q."wishId" = ? AND w."userId" = ?
+         ORDER BY q."position", c."position"`
+      )
+      .bind(wishId, userId)
+  ]);
+  return (
+    assembleWishes(
+      (results[0]?.results ?? []) as unknown as WishDbRow[],
+      (results[1]?.results ?? []) as unknown as RewardDbRow[],
+      (results[2]?.results ?? []) as unknown as QuestDbRow[],
+      (results[3]?.results ?? []) as unknown as ConditionDbRow[]
+    )[0] ?? null
+  );
 }
 
 function evaluateWish(wish: NonNullable<WishRow>, facts: readonly MetricFact[]) {
@@ -250,8 +382,8 @@ function evaluateWish(wish: NonNullable<WishRow>, facts: readonly MetricFact[]) 
     icon: wish.icon,
     priority: wish.priority,
     status: wish.status,
-    unlockDate: wish.unlockDate?.toISOString() ?? null,
-    completedAt: wish.completedAt?.toISOString() ?? null,
+    unlockDate: wish.unlockDate,
+    completedAt: wish.completedAt,
     progressPercent,
     unlockable,
     lucienComment: lucienComment(
@@ -263,8 +395,8 @@ function evaluateWish(wish: NonNullable<WishRow>, facts: readonly MetricFact[]) 
       ? {
           id: wish.reward.id,
           message: wish.reward.message,
-          unlockedAt: wish.reward.unlockedAt?.toISOString() ?? null,
-          completedAt: wish.reward.completedAt?.toISOString() ?? null
+          unlockedAt: wish.reward.unlockedAt,
+          completedAt: wish.reward.completedAt
         }
       : null,
     quests
@@ -274,24 +406,53 @@ function evaluateWish(wish: NonNullable<WishRow>, facts: readonly MetricFact[]) 
 export type WishView = ReturnType<typeof evaluateWish>;
 
 export async function listWishes(userId: string): Promise<WishView[]> {
-  const { prisma } = getRuntime();
-  const [wishes, facts] = await Promise.all([
-    prisma.wish.findMany({
-      where: { userId, status: { not: "ARCHIVED" } },
-      include: {
-        reward: true,
-        quests: {
-          include: {
-            conditions: { orderBy: { position: "asc" } }
-          },
-          orderBy: { position: "asc" }
-        }
-      },
-      orderBy: [{ priority: "asc" }, { createdAt: "asc" }]
-    }),
+  const { db } = getRuntime();
+  const [results, facts] = await Promise.all([
+    db.batch([
+      db
+        .prepare(
+          `SELECT "id", "title", "description", "category", "icon", "priority",
+                  "status", "unlockDate", "completedAt", "createdAt"
+           FROM "Wish" WHERE "userId" = ? AND "status" != 'ARCHIVED'
+           ORDER BY "priority", "createdAt"`
+        )
+        .bind(userId),
+      db
+        .prepare(
+          `SELECT r."id", r."wishId", r."message", r."unlockedAt", r."completedAt"
+           FROM "Reward" r JOIN "Wish" w ON w."id" = r."wishId"
+           WHERE w."userId" = ? AND w."status" != 'ARCHIVED'`
+        )
+        .bind(userId),
+      db
+        .prepare(
+          `SELECT q."id", q."wishId", q."title", q."description", q."position"
+           FROM "Quest" q JOIN "Wish" w ON w."id" = q."wishId"
+           WHERE w."userId" = ? AND w."status" != 'ARCHIVED'
+           ORDER BY q."position"`
+        )
+        .bind(userId),
+      db
+        .prepare(
+          `SELECT c."id", c."questId", c."metric", c."operator",
+                  c."targetValue", c."baselineValue", c."scopeKey", c."label",
+                  c."unit", c."position"
+           FROM "QuestCondition" c
+           JOIN "Quest" q ON q."id" = c."questId"
+           JOIN "Wish" w ON w."id" = q."wishId"
+           WHERE w."userId" = ? AND w."status" != 'ARCHIVED'
+           ORDER BY q."position", c."position"`
+        )
+        .bind(userId)
+    ]),
     loadFacts(userId)
   ]);
-  return wishes.map((wish) => evaluateWish(wish, facts));
+  return assembleWishes(
+    (results[0]?.results ?? []) as unknown as WishDbRow[],
+    (results[1]?.results ?? []) as unknown as RewardDbRow[],
+    (results[2]?.results ?? []) as unknown as QuestDbRow[],
+    (results[3]?.results ?? []) as unknown as ConditionDbRow[]
+  ).map((wish) => evaluateWish(wish, facts));
 }
 
 export async function getPrimaryWish(userId: string): Promise<WishView | null> {
@@ -412,28 +573,29 @@ export async function updateWish(
   wishId: string,
   input: UpdateWishInput
 ): Promise<WishView> {
-  const { prisma } = getRuntime();
-  const data = {
-    ...(input.title !== undefined ? { title: input.title } : {}),
-    ...(input.description !== undefined
-      ? { description: input.description }
-      : {}),
-    ...(input.category !== undefined ? { category: input.category } : {}),
-    ...(input.icon !== undefined ? { icon: input.icon } : {}),
-    ...(input.priority !== undefined ? { priority: input.priority } : {}),
-    ...(input.status !== undefined ? { status: input.status } : {})
+  const { db } = getRuntime();
+  const assignments: string[] = [];
+  const values: unknown[] = [];
+  const add = (column: string, value: unknown) => {
+    assignments.push(`"${column}" = ?`);
+    values.push(value);
   };
-  const result = await prisma.wish.updateMany({
-    where: {
-      id: wishId,
-      userId,
-      ...(input.status !== undefined
-        ? { status: { in: ["ACTIVE", "ARCHIVED"] } }
-        : {})
-    },
-    data
-  });
-  if (result.count !== 1) throw new Error("WISH_NOT_FOUND");
+  if (input.title !== undefined) add("title", input.title);
+  if (input.description !== undefined) add("description", input.description);
+  if (input.category !== undefined) add("category", input.category);
+  if (input.icon !== undefined) add("icon", input.icon);
+  if (input.priority !== undefined) add("priority", input.priority);
+  if (input.status !== undefined) add("status", input.status);
+  add("updatedAt", new Date().toISOString());
+  const result = await db
+    .prepare(
+      `UPDATE "Wish" SET ${assignments.join(", ")}
+       WHERE "id" = ? AND "userId" = ?
+       ${input.status !== undefined ? `AND "status" IN ('ACTIVE', 'ARCHIVED')` : ""}`
+    )
+    .bind(...values, wishId, userId)
+    .run();
+  if ((result.meta.changes ?? 0) !== 1) throw new Error("WISH_NOT_FOUND");
   const wish = await loadWishRow(userId, wishId);
   if (!wish) throw new Error("WISH_NOT_FOUND");
   return evaluateWish(wish, await loadFacts(userId));
@@ -444,11 +606,16 @@ export async function addQuest(
   wishId: string,
   input: CreateQuestInput
 ): Promise<WishView> {
-  const { db, prisma } = getRuntime();
-  const wish = await prisma.wish.findFirst({
-    where: { id: wishId, userId, status: "ACTIVE" },
-    include: { _count: { select: { quests: true } } }
-  });
+  const { db } = getRuntime();
+  const wish = await db
+    .prepare(
+      `SELECT w."id", COUNT(q."id") AS "questCount"
+       FROM "Wish" w LEFT JOIN "Quest" q ON q."wishId" = w."id"
+       WHERE w."id" = ? AND w."userId" = ? AND w."status" = 'ACTIVE'
+       GROUP BY w."id"`
+    )
+    .bind(wishId, userId)
+    .first<{ id: string; questCount: number }>();
   if (!wish) throw new Error("WISH_NOT_FOUND");
 
   const questId = crypto.randomUUID();
@@ -466,7 +633,7 @@ export async function addQuest(
         wishId,
         input.title,
         input.description,
-        wish._count.quests + 1,
+        wish.questCount + 1,
         timestamp,
         timestamp
       )
@@ -537,13 +704,18 @@ export async function recordConditionFact(
   conditionId: string,
   value: number
 ): Promise<WishView> {
-  const { prisma } = getRuntime();
-  const condition = await prisma.questCondition.findFirst({
-    where: {
-      id: conditionId,
-      quest: { wish: { id: wishId, userId, status: "ACTIVE" } }
-    }
-  });
+  const { db } = getRuntime();
+  const condition = await db
+    .prepare(
+      `SELECT c."metric", c."scopeKey", c."unit"
+       FROM "QuestCondition" c
+       JOIN "Quest" q ON q."id" = c."questId"
+       JOIN "Wish" w ON w."id" = q."wishId"
+       WHERE c."id" = ? AND w."id" = ? AND w."userId" = ?
+         AND w."status" = 'ACTIVE'`
+    )
+    .bind(conditionId, wishId, userId)
+    .first<{ metric: string; scopeKey: string | null; unit: string | null }>();
   if (!condition) throw new Error("CONDITION_NOT_FOUND");
   if (
     condition.metric !== "MANUAL_NUMBER" &&
@@ -551,17 +723,25 @@ export async function recordConditionFact(
   ) {
     throw new Error("CONDITION_NOT_MANUAL");
   }
-  await prisma.conditionFact.create({
-    data: {
-      id: crypto.randomUUID(),
+  const timestamp = new Date().toISOString();
+  await db
+    .prepare(
+      `INSERT INTO "ConditionFact"
+        ("id", "userId", "metric", "scopeKey", "value", "unit",
+         "observedAt", "createdAt")
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      crypto.randomUUID(),
       userId,
-      metric: condition.metric,
-      scopeKey: condition.scopeKey,
+      condition.metric,
+      condition.scopeKey,
       value,
-      unit: condition.unit,
-      observedAt: new Date()
-    }
-  });
+      condition.unit,
+      timestamp,
+      timestamp
+    )
+    .run();
   const wish = await loadWishRow(userId, wishId);
   if (!wish) throw new Error("WISH_NOT_FOUND");
   return evaluateWish(wish, await loadFacts(userId));

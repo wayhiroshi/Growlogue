@@ -22,6 +22,10 @@
 
 通常の参照にはPrisma Clientを使う。D1用Prismaアダプターはトランザクションを保証しないため、XPを伴う達成・取り消しはD1 Bindingの`batch()`で実行する。
 
+Life Unlocksの6テーブルは、無料枠Workerの圧縮後3 MiB制限を守るためPrisma Clientへ
+生成せず、型付きの行定義とprepared statementでD1 Bindingへアクセスする。テーブルの
+正式なスキーマは`0005_life_unlocks.sql`とし、所有者条件を各SQLに必須化する。
+
 XPは不変の台帳へ記録する。取り消しは元の記録を削除せず、負の相殺記録を追加する。
 
 ## Life Unlocks境界
