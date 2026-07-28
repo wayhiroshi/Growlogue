@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
       {
         source: "/api/v1/wishes",
         destination: "/api/v1/wishes/_root"
+      },
+      {
+        source: "/api/v1/reports/weekly",
+        destination: "/api/v1/wishes/_weekly-report"
       }
     ];
   }

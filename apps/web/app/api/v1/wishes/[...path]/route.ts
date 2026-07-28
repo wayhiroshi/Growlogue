@@ -20,6 +20,11 @@ import {
   recordFactSchema,
   updateWishSchema
 } from "@/lib/life-unlocks-validation";
+import {
+  isGameDate,
+  startOfIsoWeek
+} from "@/lib/weekly-report-domain";
+import { getWeeklyReport } from "@/lib/weekly-report-service";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +38,29 @@ export async function GET(request: Request, context: RouteContext) {
   const session = await getApiSession(request);
   if (!session) return apiError("UNAUTHORIZED", "ログインが必要です。", 401);
   const { path = [] } = await context.params;
+  if (path.length === 1 && path[0] === "_weekly-report") {
+    const weekStart = new URL(request.url).searchParams.get("weekStart");
+    if (
+      weekStart &&
+      (!isGameDate(weekStart) || startOfIsoWeek(weekStart) !== weekStart)
+    ) {
+      return apiError(
+        "INVALID_WEEK_START",
+        "週の開始日は月曜日を指定してください。",
+        400
+      );
+    }
+    try {
+      return Response.json({
+        report: await getWeeklyReport(
+          session.user.id,
+          weekStart ?? undefined
+        )
+      });
+    } catch (error) {
+      return toApiError(error);
+    }
+  }
   if (path.length !== 1 || path[0] !== "_root") return invalidRoute();
   return Response.json({ wishes: await listWishes(session.user.id) });
 }

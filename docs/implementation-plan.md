@@ -29,7 +29,9 @@ Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`work
 
 ## Phase 5以降
 
-- 旧Phase 4のレポート・共有カードをPhase 5へ繰り下げる。
+- Phase 5の最初の縦切りとして、本人専用の週間レポートを既存D1から都度集計し、
+  日別達成、獲得XP、Daily Clear、Perfect、能力XP、連続記録を表示する。
+- 共有カード、R2保存、有効期限付きShareLinkは、週間集計の実利用確認後に追加する。
 - AI伴走はPhase 6とし、Life Unlocksの実利用を確認してからWish提案とQuest生成を追加する。
 - 複数ユーザー、世界観、課金、ネイティブアプリはその後に段階展開する。
 
