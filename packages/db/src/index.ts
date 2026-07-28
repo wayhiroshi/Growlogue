@@ -383,3 +383,125 @@ export async function revertMissionAtomically(
     earnedXp: applied ? -totalOriginalXp : 0
   };
 }
+
+export interface WishTransitionInput {
+  userId: string;
+  wishId: string;
+  idempotencyKey: string;
+  now: Date;
+}
+
+export interface WishTransitionResult {
+  applied: boolean;
+  eventId: string | null;
+}
+
+export async function unlockWishAtomically(
+  db: D1Database,
+  input: WishTransitionInput
+): Promise<WishTransitionResult> {
+  const eventId = crypto.randomUUID();
+  const timestamp = iso(input.now);
+  const results = await db.batch([
+    db
+      .prepare(
+        `INSERT INTO "WishEvent"
+          ("id", "userId", "wishId", "eventType", "idempotencyKey", "createdAt")
+         SELECT ?, ?, ?, 'UNLOCK', ?, ?
+         WHERE EXISTS (
+           SELECT 1 FROM "Wish"
+           WHERE "id" = ? AND "userId" = ? AND "status" = 'ACTIVE'
+         )
+         ON CONFLICT DO NOTHING`
+      )
+      .bind(
+        eventId,
+        input.userId,
+        input.wishId,
+        input.idempotencyKey,
+        timestamp,
+        input.wishId,
+        input.userId
+      ),
+    db
+      .prepare(
+        `UPDATE "Wish"
+         SET "status" = 'UNLOCKED', "unlockDate" = ?, "updatedAt" = ?
+         WHERE "id" = ? AND "userId" = ? AND "status" = 'ACTIVE'
+           AND EXISTS (SELECT 1 FROM "WishEvent" WHERE "id" = ?)`
+      )
+      .bind(
+        timestamp,
+        timestamp,
+        input.wishId,
+        input.userId,
+        eventId
+      ),
+    db
+      .prepare(
+        `UPDATE "Reward"
+         SET "unlockedAt" = ?, "updatedAt" = ?
+         WHERE "wishId" = ?
+           AND EXISTS (SELECT 1 FROM "WishEvent" WHERE "id" = ?)`
+      )
+      .bind(timestamp, timestamp, input.wishId, eventId)
+  ]);
+
+  const applied = (results[0]?.meta.changes ?? 0) === 1;
+  return { applied, eventId: applied ? eventId : null };
+}
+
+export async function completeWishAtomically(
+  db: D1Database,
+  input: WishTransitionInput
+): Promise<WishTransitionResult> {
+  const eventId = crypto.randomUUID();
+  const timestamp = iso(input.now);
+  const results = await db.batch([
+    db
+      .prepare(
+        `INSERT INTO "WishEvent"
+          ("id", "userId", "wishId", "eventType", "idempotencyKey", "createdAt")
+         SELECT ?, ?, ?, 'COMPLETE', ?, ?
+         WHERE EXISTS (
+           SELECT 1 FROM "Wish"
+           WHERE "id" = ? AND "userId" = ? AND "status" = 'UNLOCKED'
+         )
+         ON CONFLICT DO NOTHING`
+      )
+      .bind(
+        eventId,
+        input.userId,
+        input.wishId,
+        input.idempotencyKey,
+        timestamp,
+        input.wishId,
+        input.userId
+      ),
+    db
+      .prepare(
+        `UPDATE "Wish"
+         SET "status" = 'COMPLETED', "completedAt" = ?, "updatedAt" = ?
+         WHERE "id" = ? AND "userId" = ? AND "status" = 'UNLOCKED'
+           AND EXISTS (SELECT 1 FROM "WishEvent" WHERE "id" = ?)`
+      )
+      .bind(
+        timestamp,
+        timestamp,
+        input.wishId,
+        input.userId,
+        eventId
+      ),
+    db
+      .prepare(
+        `UPDATE "Reward"
+         SET "completedAt" = ?, "updatedAt" = ?
+         WHERE "wishId" = ?
+           AND EXISTS (SELECT 1 FROM "WishEvent" WHERE "id" = ?)`
+      )
+      .bind(timestamp, timestamp, input.wishId, eventId)
+  ]);
+
+  const applied = (results[0]?.meta.changes ?? 0) === 1;
+  return { applied, eventId: applied ? eventId : null };
+}
