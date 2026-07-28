@@ -2,8 +2,14 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "growlogue-scheduler",
   "main": "src/index.ts",
+  "workers_dev": false,
+  "preview_urls": false,
   "compatibility_date": "2026-07-26",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BDUKd3gkeryq9LqFB_bEkPlP0eBhCs_k-K4n0KZadk3Y6LgVe7jMo_lOGzVL8mv7HHNbsax7zNrs8uMZvkAmpZE",
+    "VAPID_SUBJECT": "https://growlogue.way-hiroshi-66.workers.dev"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -14,6 +20,9 @@
   ],
   "triggers": {
     "crons": ["*/15 * * * *"]
+  },
+  "secrets": {
+    "required": ["VAPID_PRIVATE_KEY"]
   },
   "observability": {
     "enabled": true,
