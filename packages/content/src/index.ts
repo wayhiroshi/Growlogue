@@ -85,3 +85,38 @@ export const butlerMessages: Record<ButlerMood, readonly string[]> = {
   LONELY: ["書斎のインク壺が、少し寂しそうにしております。"],
   SULKING: ["紅茶だけ淹れて帰る執事になってしまいました。"]
 };
+
+export const butlerNotificationTemplates = {
+  MORNING: {
+    title: "本日の任務でございます",
+    body: "基本3件とボーナスをご用意しました。まずは小さな一歩から。"
+  },
+  MINIMUM_STEP: {
+    title: "5分だけ、ご一緒に",
+    body: "完璧でなくて構いません。最小の一歩でも立派な前進です。"
+  },
+  EVENING: {
+    title: "書斎に灯りを",
+    body: "本日の任務が少し残っております。ひとつだけでもいかがでしょう。"
+  },
+  STREAK_RISK: {
+    title: "あと少しでDaily Clear",
+    body: "基本任務を進めれば、本日の物語をつなげられます。"
+  },
+  LAST_CALL: {
+    title: "就寝前の小さな一歩",
+    body: "無理は禁物ですが、できそうなら最後にひとつだけ。"
+  },
+  RESTART: {
+    title: "いつでも再開できます",
+    body: "お帰りをお待ちしておりました。今日は1分だけでも十分でございます。"
+  },
+  CARE: {
+    title: "本日はご自愛ください",
+    body: "体調を整えることも大切な任務です。どうぞ無理なくお休みください。"
+  },
+  HOLIDAY: {
+    title: "休日をお楽しみください",
+    body: "休むことも物語の一部です。気が向けば小さな一歩だけどうぞ。"
+  }
+} as const;
