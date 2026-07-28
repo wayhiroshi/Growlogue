@@ -27,6 +27,7 @@ model User {
   statusProgress         StatusProgress[]
   streak                 Streak?
   achievements           UserAchievement[]
+  dailyModes             DailyMode[]
   pushSubscriptions      PushSubscription[]
   notificationDeliveries NotificationDelivery[]
   weeklyReports          WeeklyReport[]
@@ -259,6 +260,19 @@ model Streak {
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model DailyMode {
+  id        String   @id
+  userId    String
+  gameDate  String
+  mode      String   @default("NORMAL")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameDate])
+  @@index([gameDate, mode])
+}
+
 model Achievement {
   id          String            @id
   name        String
@@ -291,28 +305,41 @@ model NotificationTemplate {
 }
 
 model PushSubscription {
-  id        String   @id
-  userId    String
-  endpoint  String   @unique
-  p256dh    String
-  auth      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String                 @id
+  userId     String
+  endpoint   String                 @unique
+  p256dh     String
+  auth       String
+  expiresAt  DateTime?
+  userAgent  String?
+  disabledAt DateTime?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
 
-  @@index([userId])
+  @@index([userId, disabledAt])
 }
 
 model NotificationDelivery {
-  id          String   @id
-  userId      String
-  triggerType String
-  gameDate    String
-  habitId     String?
-  deliveredAt DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String            @id
+  userId         String
+  subscriptionId String?
+  triggerType    String
+  gameDate       String
+  habitId        String?
+  status         String            @default("PENDING")
+  attemptCount   Int               @default(0)
+  responseStatus Int?
+  errorCode      String?
+  createdAt      DateTime          @default(now())
+  attemptedAt    DateTime?
+  deliveredAt    DateTime?
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   PushSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, triggerType, gameDate, habitId])
+  @@index([userId, gameDate, status])
+  @@index([subscriptionId])
 }
 
 model WeeklyReport {

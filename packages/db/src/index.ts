@@ -52,12 +52,42 @@ export async function completeMissionAtomically(
     return {
       applied: false,
       eventId: existing?.id ?? null,
-      earnedXp: existing?.xpEntries[0]?.amount ?? 0
+      earnedXp:
+        existing?.xpEntries.reduce((total, entry) => total + entry.amount, 0) ??
+        0
     };
   }
 
+  const [previousActivity, existingResumeBonus] = await Promise.all([
+    prisma.activityEvent.findFirst({
+      where: {
+        userId: input.userId,
+        type: "COMPLETE",
+        gameDate: { lt: mission.gameDate }
+      },
+      orderBy: [{ gameDate: "desc" }, { createdAt: "desc" }],
+      select: { gameDate: true }
+    }),
+    prisma.xpLedger.findFirst({
+      where: {
+        userId: input.userId,
+        gameDate: mission.gameDate,
+        reason: "RESUME_BONUS"
+      },
+      select: { id: true }
+    })
+  ]);
+  const inactiveDays = previousActivity
+    ? Math.round(
+        (Date.parse(`${mission.gameDate}T00:00:00.000Z`) -
+          Date.parse(`${previousActivity.gameDate}T00:00:00.000Z`)) /
+          86_400_000
+      )
+    : 0;
+  const resumeBonus = inactiveDays >= 2 && !existingResumeBonus ? 5 : 0;
   const eventId = crypto.randomUUID();
   const ledgerId = crypto.randomUUID();
+  const resumeLedgerId = crypto.randomUUID();
   const timestamp = iso(input.now);
   const statusKey = mission.habit.category.key;
 
@@ -130,6 +160,50 @@ export async function completeMissionAtomically(
       ),
     db
       .prepare(
+        `INSERT INTO "XpLedger"
+          ("id", "userId", "eventId", "amount", "reason", "statusKey", "gameDate", "createdAt")
+         SELECT ?, ?, ?, ?, 'RESUME_BONUS', 'resilience', ?, ?
+         WHERE ? > 0
+           AND EXISTS (
+             SELECT 1 FROM "ProjectionApplication"
+             WHERE "eventId" = ? AND "appliedAt" = ?
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM "XpLedger"
+             WHERE "userId" = ? AND "gameDate" = ? AND "reason" = 'RESUME_BONUS'
+           )
+         ON CONFLICT DO NOTHING`
+      )
+      .bind(
+        resumeLedgerId,
+        input.userId,
+        eventId,
+        resumeBonus,
+        mission.gameDate,
+        timestamp,
+        resumeBonus,
+        eventId,
+        timestamp,
+        input.userId,
+        mission.gameDate
+      ),
+    db
+      .prepare(
+        `UPDATE "UserProgress"
+         SET "totalXp" = "totalXp" + 5, "updatedAt" = ?
+         WHERE "userId" = ? AND changes() = 1 AND EXISTS (
+           SELECT 1 FROM "ProjectionApplication"
+           WHERE "eventId" = ? AND "appliedAt" = ?
+         )`
+      )
+      .bind(
+        timestamp,
+        input.userId,
+        eventId,
+        timestamp
+      ),
+    db
+      .prepare(
         `INSERT INTO "StatusProgress" ("id", "userId", "statusKey", "xp", "updatedAt")
          SELECT ?, ?, ?, ?, ?
          WHERE EXISTS (
@@ -151,10 +225,12 @@ export async function completeMissionAtomically(
   ]);
 
   const applied = (results[1]?.meta.changes ?? 0) === 1;
+  const resumeBonusApplied = (results[5]?.meta.changes ?? 0) === 1;
   return {
     applied,
     eventId: applied ? eventId : null,
-    earnedXp: applied ? mission.xpSnapshot : 0
+    earnedXp:
+      applied ? mission.xpSnapshot + (resumeBonusApplied ? 5 : 0) : 0
   };
 }
 
@@ -177,8 +253,13 @@ export async function revertMissionAtomically(
   });
 
   const originalEvent = mission?.events[0];
-  const originalXp = originalEvent?.xpEntries[0]?.amount;
-  if (!mission || !originalEvent || originalXp === undefined) {
+  const originalMissionXp = originalEvent?.xpEntries.find(
+    (entry) => entry.reason === "MISSION_COMPLETE"
+  )?.amount;
+  const resumeBonusXp =
+    originalEvent?.xpEntries.find((entry) => entry.reason === "RESUME_BONUS")
+      ?.amount ?? 0;
+  if (!mission || !originalEvent || originalMissionXp === undefined) {
     throw new Error("COMPLETION_NOT_FOUND");
   }
   if (mission.status !== "COMPLETED") {
@@ -187,8 +268,10 @@ export async function revertMissionAtomically(
 
   const eventId = crypto.randomUUID();
   const ledgerId = crypto.randomUUID();
+  const resumeLedgerId = crypto.randomUUID();
   const timestamp = iso(input.now);
   const statusKey = mission.habit.category.key;
+  const totalOriginalXp = originalMissionXp + resumeBonusXp;
 
   const results = await db.batch([
     db
@@ -236,10 +319,31 @@ export async function revertMissionAtomically(
         ledgerId,
         input.userId,
         eventId,
-        -originalXp,
+        -originalMissionXp,
         statusKey,
         mission.gameDate,
         timestamp,
+        eventId,
+        timestamp
+      ),
+    db
+      .prepare(
+        `INSERT INTO "XpLedger"
+          ("id", "userId", "eventId", "amount", "reason", "statusKey", "gameDate", "createdAt")
+         SELECT ?, ?, ?, ?, 'RESUME_BONUS_REVERT', 'resilience', ?, ?
+         WHERE ? > 0 AND EXISTS (
+           SELECT 1 FROM "ProjectionApplication"
+           WHERE "eventId" = ? AND "appliedAt" = ?
+         )`
+      )
+      .bind(
+        resumeLedgerId,
+        input.userId,
+        eventId,
+        -resumeBonusXp,
+        mission.gameDate,
+        timestamp,
+        resumeBonusXp,
         eventId,
         timestamp
       ),
@@ -252,7 +356,7 @@ export async function revertMissionAtomically(
            WHERE "eventId" = ? AND "appliedAt" = ?
          )`
       )
-      .bind(originalXp, timestamp, input.userId, eventId, timestamp),
+      .bind(totalOriginalXp, timestamp, input.userId, eventId, timestamp),
     db
       .prepare(
         `UPDATE "StatusProgress"
@@ -263,7 +367,7 @@ export async function revertMissionAtomically(
          )`
       )
       .bind(
-        originalXp,
+        originalMissionXp,
         timestamp,
         input.userId,
         statusKey,
@@ -276,6 +380,6 @@ export async function revertMissionAtomically(
   return {
     applied,
     eventId: applied ? eventId : null,
-    earnedXp: applied ? -originalXp : 0
+    earnedXp: applied ? -totalOriginalXp : 0
   };
 }
