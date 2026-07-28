@@ -2,7 +2,7 @@
 
 import type { DayMode, NotificationLevel } from "@growlogue/domain";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const dayModes: Array<{ value: DayMode; label: string; note: string }> = [
   { value: "NORMAL", label: "通常", note: "いつものミッションと通知" },
@@ -44,7 +44,30 @@ export function PhaseThreeSettings({
   );
   const [quietHoursEnd, setQuietHoursEnd] = useState(initialQuietHoursEnd);
   const [message, setMessage] = useState("");
+  const [pushGuide, setPushGuide] = useState("");
   const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    const isIos =
+      /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const standalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+    const supported =
+      "serviceWorker" in navigator &&
+      "PushManager" in window &&
+      "Notification" in window;
+
+    const guide =
+      isIos && !standalone
+        ? "iPhoneではSafariの共有メニューから「ホーム画面に追加」し、「Webアプリとして開く」をオンにしてください。その後、ホーム画面のGrowlogueから開くと通知を有効にできます。"
+        : !supported
+          ? "この環境ではWeb Pushを利用できません。"
+          : "";
+    const update = window.setTimeout(() => setPushGuide(guide), 0);
+    return () => window.clearTimeout(update);
+  }, []);
 
   async function updateMode(nextMode: DayMode) {
     setPending(true);
@@ -85,12 +108,16 @@ export function PhaseThreeSettings({
   }
 
   async function enablePush() {
+    if (pushGuide) {
+      setMessage(pushGuide);
+      return;
+    }
     if (
       !("serviceWorker" in navigator) ||
       !("PushManager" in window) ||
       !("Notification" in window)
     ) {
-      setMessage("このブラウザはWeb Pushに対応していません。");
+      setMessage("この環境ではWeb Pushを利用できません。");
       return;
     }
 
@@ -253,6 +280,14 @@ export function PhaseThreeSettings({
             この端末の通知を停止
           </button>
         </div>
+        {pushGuide ? (
+          <p className="mt-3 rounded-xl bg-[#f1ecdf] p-3 text-sm leading-6 text-[#4f5d54]">
+            <strong className="block text-[#173f35]">
+              iPhoneで通知を使うには
+            </strong>
+            {pushGuide}
+          </p>
+        ) : null}
         <p className="mt-3 text-xs leading-5 text-[#667269]">
           通知許可はボタンを押したときだけ求めます。完全休息日は送信しません。
         </p>

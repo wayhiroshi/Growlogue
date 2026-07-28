@@ -1,7 +1,9 @@
 import { AppNav } from "@/components/app-nav";
 import { MissionList } from "@/components/mission-list";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
+import { getPrimaryWish } from "@/lib/life-unlocks-service";
 import { requireSession } from "@/lib/session";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export const metadata = { title: "今日のミッション" };
@@ -19,7 +21,10 @@ export default async function HomePage() {
   const session = await requireSession();
   const profile = await ensureUserFoundation(session.user.id);
   if (!profile.onboardingDone) redirect("/onboarding");
-  const dashboard = await getDashboard(session.user.id);
+  const [dashboard, primaryWish] = await Promise.all([
+    getDashboard(session.user.id),
+    getPrimaryWish(session.user.id)
+  ]);
   const percent =
     dashboard.daily.totalMissions === 0
       ? 0
@@ -92,6 +97,51 @@ export default async function HomePage() {
           </span>
         </div>
       </div>
+
+      <section className="card mb-5 overflow-hidden">
+        <div className="flex items-center justify-between gap-4 p-5">
+          <div>
+            <p className="eyebrow">Dreams</p>
+            <h2 className="serif text-xl font-semibold">人生の解放</h2>
+          </div>
+          <Link
+            className="button-secondary min-h-0 px-4 py-2 text-xs"
+            href="/wishes"
+          >
+            すべて見る
+          </Link>
+        </div>
+        {primaryWish ? (
+          <div className="border-t border-[#173f3515] px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl" aria-hidden="true">
+                {primaryWish.status === "UNLOCKED" ? "🔓" : primaryWish.icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex justify-between gap-3">
+                  <strong className="truncate">{primaryWish.title}</strong>
+                  <span className="text-sm font-black text-[#bd8d39]">
+                    {primaryWish.progressPercent}%
+                  </span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#ece7da]">
+                  <div
+                    className="h-full rounded-full bg-[#bd8d39]"
+                    style={{ width: `${primaryWish.progressPercent}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="serif mt-4 text-sm leading-6 text-[#4f5d54]">
+              Lucien「{primaryWish.lucienComment}」
+            </p>
+          </div>
+        ) : (
+          <div className="border-t border-[#173f3515] px-5 py-4 text-sm leading-6 text-[#667269]">
+            現実で叶えたいことをWishとして登録しましょう。
+          </div>
+        )}
+      </section>
 
       <MissionList missions={dashboard.missions} />
       <AppNav />

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const items = [
   { href: "/home", icon: "♜", label: "今日" },
+  { href: "/wishes", icon: "🔓", label: "夢" },
   { href: "/habits", icon: "✓", label: "習慣" },
   { href: "/status", icon: "✦", label: "能力" },
   { href: "/settings", icon: "⚙", label: "設定" }

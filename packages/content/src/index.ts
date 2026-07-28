@@ -6,7 +6,7 @@ export const britishGentlemanWorld = {
   xpLabel: "Gentleman XP",
   character: {
     id: "character-butler-alistair",
-    name: "アリステア",
+    name: "Lucien（ルシアン）",
     personality: "面倒だが憎めない、決して見捨てない執事"
   }
 } as const;
