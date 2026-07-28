@@ -10,10 +10,8 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const session = await requireSession();
-  const [profile, todayMode] = await Promise.all([
-    ensureUserFoundation(session.user.id),
-    getTodayMode(session.user.id)
-  ]);
+  const profile = await ensureUserFoundation(session.user.id);
+  const todayMode = await getTodayMode(session.user.id);
   return (
     <main className="app-shell">
       <p className="eyebrow">Preferences</p>
