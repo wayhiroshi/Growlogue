@@ -33,7 +33,7 @@ export async function GET(request: Request, context: RouteContext) {
   const session = await getApiSession(request);
   if (!session) return apiError("UNAUTHORIZED", "ログインが必要です。", 401);
   const { path = [] } = await context.params;
-  if (path.length !== 0) return invalidRoute();
+  if (path.length !== 1 || path[0] !== "_root") return invalidRoute();
   return Response.json({ wishes: await listWishes(session.user.id) });
 }
 
@@ -62,7 +62,7 @@ export async function POST(request: Request, context: RouteContext) {
   const { path = [] } = await context.params;
 
   try {
-    if (path.length === 0) {
+    if (path.length === 1 && path[0] === "_root") {
       const parsed = createWishSchema.safeParse(await readJson(request));
       if (!parsed.success) {
         return apiError(
