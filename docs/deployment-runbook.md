@@ -38,3 +38,12 @@ R2はPhase 1〜3では使用しない。共有カード画像の保存が必要�
 - 問題時は直前のWorker versionへ戻す。
 - D1のXP台帳は削除せず、修正migrationまたは相殺イベントで整合させる。
 - 新規公開を停止する場合はWorkerを削除せず、先にrouteまたはworkers.dev公開を無効化する。
+
+## Phase 3 Web Push
+
+- Scheduler: `growlogue-scheduler`
+- Cron: 15分間隔（UTC基準で実行し、通知判定は利用者タイムゾーンで行う）
+- Secret: `VAPID_PRIVATE_KEY`
+- 非秘密設定: `VAPID_PUBLIC_KEY`、`VAPID_SUBJECT`
+
+公開前に、`0002_phase3_notifications.sql`以降をremote D1へ適用する。Schedulerは`workers_dev: false`、`preview_urls: false`を維持し、`pnpm --filter @growlogue/scheduler deploy`で公開する。最初の実端末購読後、手動scheduled testで1件を送り、`NotificationDelivery`が`SENT`になったことと、同じtriggerの再実行で件数が増えないことを確認する。
