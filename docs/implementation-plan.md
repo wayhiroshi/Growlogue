@@ -19,6 +19,20 @@ Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`work
 - 明示操作によるPush購読、Service Worker、15分Cron、最大5件/日、23:30〜08:00の夜間停止を実装する。
 - Schedulerは公開HTTP面を持たず、VAPID秘密鍵をWorker Secretとして保持する。
 
+## Phase 4: Life Unlocks
+
+- Wish、Quest、QuestCondition、Reward、ConditionFact、WishEventを追加する。
+- HabitやXPと独立したCondition Engineで、総XP、カテゴリXP、連続日数、達成回数、手入力値、金額を評価する。
+- Wish追加・編集、複数AND条件、進捗表示、手入力Fact、Unlocked演出、Reward完了、Lucienコメントを実装する。
+- HomeへDreamsを追加し、現実の人生イベントをGrowlogueの報酬として見せる。
+- 収入、体重、資産などのFactは本人限定とし、共有やAI送信の対象外とする。
+
+## Phase 5以降
+
+- 旧Phase 4のレポート・共有カードをPhase 5へ繰り下げる。
+- AI伴走はPhase 6とし、Life Unlocksの実利用を確認してからWish提案とQuest生成を追加する。
+- 複数ユーザー、世界観、課金、ネイティブアプリはその後に段階展開する。
+
 ## 完了判定
 
-`pnpm verify`、ローカルD1の統合確認、Cloudflare preview、本番URLでのPC・スマートフォン確認が成功すること。
+各Phaseで`pnpm verify`、ローカルD1の統合確認、Cloudflare preview、本番URLでのPC・スマートフォン確認が成功すること。

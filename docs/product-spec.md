@@ -19,3 +19,17 @@
 ## 初期版の成功条件
 
 本人がログインし、英国紳士の世界観で習慣を選び、今日のミッションを達成するとXP・能力値・連続記録が一貫して更新されること。
+
+## Growlogueの中核: Life Unlocks
+
+Growlogueの報酬はゲーム内アイテムではなく、利用者が現実で実行する人生イベントとする。
+
+利用者は実現したいことをWishとして登録し、複数条件を持つQuestを進める。日々の行動や手入力した事実が条件を満たすとWishがUnlockedになり、Rewardを現実で実行してCompletedにする。
+
+```text
+Wish → Quest → Mission / Fact → 能力成長 → Wish Unlocked → Reward
+```
+
+Life UnlocksはHabitやXPへ直接依存しない独立ドメインとする。条件評価はCondition EngineがFactを受け取って行い、資格、健康、資産形成、家族、旅行などへ同じ仕組みを再利用できるようにする。
+
+詳細仕様は[`life-unlocks-spec.md`](./life-unlocks-spec.md)を正本とする。
