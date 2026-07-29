@@ -5,6 +5,7 @@ import {
   readJson,
   toApiError
 } from "@/lib/api";
+import { ensureUserFoundation } from "@/lib/game-service";
 import {
   addQuest,
   completeWishReward,
@@ -25,6 +26,8 @@ import {
   startOfIsoWeek
 } from "@/lib/weekly-report-domain";
 import { getWeeklyReport } from "@/lib/weekly-report-service";
+import { isMonthKey } from "@/lib/monthly-report-domain";
+import { getMonthlyReport } from "@/lib/monthly-report-service";
 import {
   createWeeklyShareCard,
   getActiveWeeklyShare,
@@ -90,11 +93,30 @@ export async function GET(request: Request, context: RouteContext) {
       );
     }
     try {
+      await ensureUserFoundation(session.user.id);
       return Response.json({
         report: await getWeeklyReport(
           session.user.id,
           weekStart ?? undefined
         )
+      });
+    } catch (error) {
+      return toApiError(error);
+    }
+  }
+  if (path.length === 1 && path[0] === "_monthly-report") {
+    const month = new URL(request.url).searchParams.get("month");
+    if (month && !isMonthKey(month)) {
+      return apiError(
+        "INVALID_MONTH",
+        "月はYYYY-MM形式で指定してください。",
+        400
+      );
+    }
+    try {
+      await ensureUserFoundation(session.user.id);
+      return Response.json({
+        report: await getMonthlyReport(session.user.id, month ?? undefined)
       });
     } catch (error) {
       return toApiError(error);

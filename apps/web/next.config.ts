@@ -25,6 +25,10 @@ const nextConfig: NextConfig = {
         destination: "/api/v1/wishes/_weekly-report"
       },
       {
+        source: "/api/v1/reports/monthly",
+        destination: "/api/v1/wishes/_monthly-report"
+      },
+      {
         source: "/api/v1/share-cards",
         destination: "/api/v1/wishes/_share-cards"
       },
