@@ -2,6 +2,7 @@ import {
   britishGentlemanWorld,
   butlerMessages,
   categories,
+  companions,
   habitTemplates,
   type ButlerMood
 } from "@growlogue/content";
@@ -38,19 +39,23 @@ export async function ensureUserFoundation(userId: string) {
       xpLabel: britishGentlemanWorld.xpLabel
     }
   });
-  await prisma.character.upsert({
-    where: { id: britishGentlemanWorld.character.id },
-    update: {
-      name: britishGentlemanWorld.character.name,
-      personality: britishGentlemanWorld.character.personality
-    },
-    create: {
-      id: britishGentlemanWorld.character.id,
-      worldId: britishGentlemanWorld.id,
-      name: britishGentlemanWorld.character.name,
-      personality: britishGentlemanWorld.character.personality
-    }
-  });
+  for (const character of companions) {
+    await prisma.character.upsert({
+      where: { id: character.id },
+      update: {
+        name: character.name,
+        personality: character.personality,
+        avatarUrl: character.avatarUrl
+      },
+      create: {
+        id: character.id,
+        worldId: britishGentlemanWorld.id,
+        name: character.name,
+        personality: character.personality,
+        avatarUrl: character.avatarUrl
+      }
+    });
+  }
   for (const category of categories) {
     await prisma.category.upsert({
       where: { id: category.id },
@@ -299,7 +304,7 @@ export async function getDashboard(userId: string) {
       status: mission.status === "COMPLETED" ? "COMPLETED" : "PENDING"
     }))
   );
-  const [progress, streak, statuses, dailyMode, lastActivity] =
+  const [progress, streak, statuses, dailyMode, lastActivity, characterState] =
     await Promise.all([
       prisma.userProgress.findUniqueOrThrow({ where: { userId } }),
       prisma.streak.findUniqueOrThrow({ where: { userId } }),
@@ -314,6 +319,10 @@ export async function getDashboard(userId: string) {
         where: { userId, type: "COMPLETE" },
         orderBy: { createdAt: "desc" },
         select: { gameDate: true }
+      }),
+      prisma.characterState.findUniqueOrThrow({
+        where: { userId },
+        include: { character: true }
       })
     ]);
   const dayMode = (dailyMode?.mode ?? "NORMAL") as DayMode;
@@ -359,11 +368,47 @@ export async function getDashboard(userId: string) {
     streak,
     statuses,
     character: {
-      ...britishGentlemanWorld.character,
+      id: characterState.character.id,
+      name: characterState.character.name,
+      personality: characterState.character.personality,
+      avatarUrl: characterState.character.avatarUrl,
       mood,
       message: butlerMessages[mood][0]
     }
   };
+}
+
+export async function listCompanions(userId: string) {
+  const { prisma } = getRuntime();
+  await ensureUserFoundation(userId);
+  const [characters, selected] = await Promise.all([
+    prisma.character.findMany({
+      where: { worldId: britishGentlemanWorld.id },
+      orderBy: { name: "asc" }
+    }),
+    prisma.characterState.findUniqueOrThrow({ where: { userId } })
+  ]);
+  return {
+    characters,
+    selectedCharacterId: selected.characterId
+  };
+}
+
+export async function selectCompanion(userId: string, characterId: string) {
+  const { prisma } = getRuntime();
+  await ensureUserFoundation(userId);
+  const character = await prisma.character.findFirst({
+    where: {
+      id: characterId,
+      worldId: britishGentlemanWorld.id
+    }
+  });
+  if (!character) throw new Error("CHARACTER_NOT_FOUND");
+  await prisma.characterState.update({
+    where: { userId },
+    data: { characterId }
+  });
+  return character;
 }
 
 export async function getDailyReviewSnapshot(userId: string) {

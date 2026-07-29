@@ -48,6 +48,21 @@ export function MissionList({ missions }: { missions: Mission[] }) {
     router.refresh();
   }
 
+  const groups = [
+    {
+      role: "CORE",
+      label: "今日の中心",
+      note: "3つでDaily Clear",
+      missions: missions.filter((mission) => mission.role === "CORE")
+    },
+    {
+      role: "BONUS",
+      label: "余力があれば",
+      note: "すべてでPerfect",
+      missions: missions.filter((mission) => mission.role !== "CORE")
+    }
+  ];
+
   return (
     <>
       {message ? (
@@ -55,51 +70,52 @@ export function MissionList({ missions }: { missions: Mission[] }) {
           {message}
         </p>
       ) : null}
-      <div className="grid gap-3">
-        {missions.map((mission) => {
-          const complete = mission.status === "COMPLETED";
-          return (
-            <button
-              key={mission.id}
-              type="button"
-              disabled={pendingId === mission.id}
-              onClick={() => toggle(mission)}
-              className={`card flex w-full items-center gap-4 p-4 text-left transition ${
-                complete
-                  ? "border-[#8bb29c] bg-[#edf5ef]"
-                  : "hover:border-[#bd8d39]"
-              }`}
-            >
-              <span
-                className={`grid size-10 shrink-0 place-items-center rounded-full border-2 text-lg ${
-                  complete
-                    ? "border-[#173f35] bg-[#173f35] text-white"
-                    : "border-[#b9b7ae] bg-white"
-                }`}
-                aria-hidden="true"
-              >
-                {complete ? "✓" : mission.habit.category.icon}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="mb-1 flex items-center gap-2">
-                  <strong className={complete ? "line-through opacity-65" : ""}>
-                    {mission.habit.worldTitle}
-                  </strong>
-                  <span className="rounded-full bg-[#ece7da] px-2 py-0.5 text-[10px] font-black tracking-wider text-[#667269]">
-                    {mission.role === "CORE" ? "CORE" : "BONUS"}
-                  </span>
-                </span>
-                <span className="block truncate text-xs text-[#667269]">
-                  {mission.habit.minimumRule}
-                </span>
-              </span>
-              <span className="shrink-0 text-xs font-black text-[#bd8d39]">
-                +{mission.xpSnapshot} XP
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <section className="mission-board" aria-labelledby="missions-heading">
+        <div className="section-heading">
+          <span className="section-heading__icon" aria-hidden="true">☀</span>
+          <div>
+            <p className="eyebrow">Today&apos;s path</p>
+            <h2 id="missions-heading">今日の流れ</h2>
+          </div>
+        </div>
+        {groups.map((group) =>
+          group.missions.length ? (
+            <div className="mission-group" key={group.role}>
+              <div className="mission-group__heading">
+                <strong>{group.label}</strong>
+                <span>{group.note}</span>
+              </div>
+              <div className="mission-timeline">
+                {group.missions.map((mission) => {
+                  const complete = mission.status === "COMPLETED";
+                  return (
+                    <button
+                      aria-label={`${mission.habit.worldTitle}を${complete ? "未完了に戻す" : "完了する"}`}
+                      className={`mission-item ${complete ? "is-complete" : ""}`}
+                      disabled={pendingId === mission.id}
+                      key={mission.id}
+                      onClick={() => toggle(mission)}
+                      type="button"
+                    >
+                      <span className="mission-item__marker" aria-hidden="true">
+                        {complete ? "✓" : mission.habit.category.icon}
+                      </span>
+                      <span className="mission-item__body">
+                        <strong>{mission.habit.worldTitle}</strong>
+                        <small>{mission.habit.minimumRule}</small>
+                      </span>
+                      <span className="mission-item__xp">
+                        +{mission.xpSnapshot}
+                        <small>XP</small>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null
+        )}
+      </section>
     </>
   );
 }

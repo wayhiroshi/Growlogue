@@ -4,6 +4,7 @@ import { MissionList } from "@/components/mission-list";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
 import { getPrimaryWish } from "@/lib/life-unlocks-service";
 import { requireSession } from "@/lib/session";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -32,16 +33,18 @@ export default async function HomePage() {
       : Math.round(
           (dashboard.daily.totalCompleted / dashboard.daily.totalMissions) * 100
         );
+  const characterName = dashboard.character.name.split("（")[0] ?? "Lucien";
 
   return (
     <main className="app-shell">
-      <header className="mb-6 flex items-start justify-between gap-4">
+      <header className="home-heading">
         <div>
-          <p className="eyebrow">{dashboard.gameDate}</p>
-          <h1 className="serif text-3xl font-semibold">本日の任務</h1>
+          <p className="eyebrow">Today · {dashboard.gameDate}</p>
+          <h1>今日も、物語を進めよう</h1>
+          <p>小さな一歩を、{characterName}が見守っています。</p>
         </div>
-        <div className="rounded-2xl bg-[#173f35] px-4 py-3 text-right text-white">
-          <span className="block text-[10px] font-bold tracking-widest opacity-65">LEVEL</span>
+        <div className="level-badge" aria-label={`レベル ${dashboard.progress.level}`}>
+          <span>LEVEL</span>
           <strong className="text-2xl">{dashboard.progress.level}</strong>
         </div>
       </header>
@@ -52,101 +55,121 @@ export default async function HomePage() {
         </p>
       ) : null}
 
-      <section className="card mb-5 overflow-hidden">
-        <div className="flex items-center gap-4 p-5">
-          <div className="grid size-16 shrink-0 place-items-center rounded-full bg-[#173f35] text-3xl text-white">
-            ♟
-          </div>
-          <div>
-            <p className="text-xs font-black tracking-widest text-[#bd8d39]">
-              {dashboard.character.mood}
-            </p>
-            <p className="serif mt-1 leading-7">{dashboard.character.message}</p>
-          </div>
-        </div>
-        <div className="border-t border-[#173f3515] bg-[#f1ecdf] px-5 py-3">
-          <div className="mb-2 flex justify-between text-xs font-bold">
-            <span>
-              {dashboard.daily.totalCompleted}/{dashboard.daily.totalMissions} 完了
-            </span>
-            <span>{percent}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white">
-            <div
-              className="h-full rounded-full bg-[#bd8d39] transition-all"
-              style={{ width: `${percent}%` }}
+      <section className="companion-hero">
+        <div className="companion-hero__image">
+          {dashboard.character.avatarUrl ? (
+            <Image
+              alt={`${dashboard.character.name}のポートレート`}
+              fill
+              priority
+              sizes="(max-width: 768px) 46vw, 340px"
+              src={dashboard.character.avatarUrl}
             />
+          ) : null}
+          <span className="companion-hero__mood">{dashboard.character.mood}</span>
+        </div>
+        <div className="companion-hero__body">
+          <p className="eyebrow">Your companion</p>
+          <h2>{characterName}</h2>
+          <p className="companion-hero__message">
+            「{dashboard.character.message}」
+          </p>
+          <div className="progress-summary">
+            <div>
+              <strong>
+                {dashboard.daily.totalCompleted}/{dashboard.daily.totalMissions}
+              </strong>
+              <span>今日の完了</span>
+            </div>
+            <strong>{percent}%</strong>
+          </div>
+          <div
+            aria-label={`今日の進捗 ${percent}%`}
+            aria-valuemax={100}
+            aria-valuemin={0}
+            aria-valuenow={percent}
+            className="progress-track"
+            role="progressbar"
+          >
+            <div style={{ width: `${percent}%` }} />
           </div>
         </div>
       </section>
 
-      <div className="mb-4 grid grid-cols-3 gap-2">
-        <div className="card p-3 text-center">
-          <span className="block text-xl font-black">{dashboard.progress.totalXp}</span>
-          <span className="text-[10px] font-bold text-[#667269]">TOTAL XP</span>
+      <div className="metric-strip">
+        <div>
+          <span className="metric-strip__icon" aria-hidden="true">✦</span>
+          <strong>{dashboard.progress.totalXp}</strong>
+          <span>Total XP</span>
         </div>
-        <div className="card p-3 text-center">
-          <span className="block text-xl font-black">{dashboard.streak.currentDays}</span>
-          <span className="text-[10px] font-bold text-[#667269]">STREAK</span>
+        <div>
+          <span className="metric-strip__icon" aria-hidden="true">♨</span>
+          <strong>{dashboard.streak.currentDays}</strong>
+          <span>連続日数</span>
         </div>
-        <div className="card p-3 text-center">
-          <span className="block text-xl font-black">
+        <div>
+          <span className="metric-strip__icon" aria-hidden="true">◎</span>
+          <strong>
             {dashboard.daily.isPerfect ? "★" : dashboard.daily.coreCompleted}
-          </span>
-          <span className="text-[10px] font-bold text-[#667269]">
-            {dashboard.daily.isPerfect ? "PERFECT" : "CORE"}
+          </strong>
+          <span>
+            {dashboard.daily.isPerfect ? "Perfect" : "Core"}
           </span>
         </div>
       </div>
 
-      <DailyReviewCard />
+      <MissionList missions={dashboard.missions} />
 
-      <section className="card mb-5 overflow-hidden">
-        <div className="flex items-center justify-between gap-4 p-5">
+      <section className="dream-feature">
+        <div className="dream-feature__image" aria-hidden="true">
+          <Image
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 720px"
+            src="/images/scenes/life-unlocks-garden.webp"
+          />
+        </div>
+        <div className="dream-feature__body">
+          <div className="flex items-center justify-between gap-4">
           <div>
             <p className="eyebrow">Dreams</p>
-            <h2 className="serif text-xl font-semibold">人生の解放</h2>
+              <h2>人生の解放</h2>
           </div>
           <Link
-            className="button-secondary min-h-0 px-4 py-2 text-xs"
+              className="text-link"
             href="/wishes"
           >
             すべて見る
           </Link>
         </div>
         {primaryWish ? (
-          <div className="border-t border-[#173f3515] px-5 py-4">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl" aria-hidden="true">
+            <div className="dream-progress">
+              <span className="dream-progress__icon" aria-hidden="true">
                 {primaryWish.status === "UNLOCKED" ? "🔓" : primaryWish.icon}
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex justify-between gap-3">
                   <strong className="truncate">{primaryWish.title}</strong>
-                  <span className="text-sm font-black text-[#bd8d39]">
+                    <span className="progress-percent">
                     {primaryWish.progressPercent}%
                   </span>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#ece7da]">
+                  <div className="progress-track mt-2">
                   <div
-                    className="h-full rounded-full bg-[#bd8d39]"
                     style={{ width: `${primaryWish.progressPercent}%` }}
                   />
                 </div>
               </div>
-            </div>
-            <p className="serif mt-4 text-sm leading-6 text-[#4f5d54]">
-              Lucien「{primaryWish.lucienComment}」
-            </p>
           </div>
         ) : (
-          <div className="border-t border-[#173f3515] px-5 py-4 text-sm leading-6 text-[#667269]">
+            <p className="empty-copy">
             現実で叶えたいことをWishとして登録しましょう。
-          </div>
+            </p>
         )}
+        </div>
       </section>
 
-      <MissionList missions={dashboard.missions} />
+      <DailyReviewCard characterName={characterName} />
       <AppNav />
     </main>
   );

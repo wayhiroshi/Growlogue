@@ -1,4 +1,5 @@
 import { AppNav } from "@/components/app-nav";
+import { PageHeader } from "@/components/page-header";
 import { MonthlyReportClient } from "@/components/monthly-report-client";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -9,16 +10,13 @@ export const dynamic = "force-dynamic";
 export default function MonthlyReportPage() {
   return (
     <main className="app-shell">
-      <p className="eyebrow">Monthly Chronicle</p>
-      <div className="flex items-end justify-between gap-4">
-        <h1 className="serif text-3xl font-semibold">月間レポート</h1>
-        <Link
-          className="text-sm font-bold text-[#2f6556] underline"
-          href="/reports/weekly"
-        >
-          週間を見る
-        </Link>
-      </div>
+      <PageHeader
+        action={<Link className="text-link" href="/reports/weekly">週間へ</Link>}
+        description="一か月の変化を、数字と物語の両方から振り返ります。"
+        eyebrow="Monthly Chronicle"
+        icon="▦"
+        title="月間レポート"
+      />
       <Suspense
         fallback={
           <div className="card my-5 p-5 text-sm text-[#667269]">

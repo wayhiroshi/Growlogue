@@ -1,4 +1,5 @@
 import { AppNav } from "@/components/app-nav";
+import { PageHeader } from "@/components/page-header";
 import { categories } from "@growlogue/content";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
 import { requireSession } from "@/lib/session";
@@ -16,9 +17,13 @@ export default async function StatusPage() {
 
   return (
     <main className="app-shell">
-      <p className="eyebrow">Character sheet</p>
-      <h1 className="serif text-3xl font-semibold">あなたの能力値</h1>
-      <section className="card my-6 grid grid-cols-2 gap-4 p-5">
+      <PageHeader
+        description="毎日の小さな選択が、あなた自身の能力として積み上がります。"
+        eyebrow="Growth"
+        icon="✦"
+        title="成長の記録"
+      />
+      <section className="status-summary">
         <div>
           <span className="text-xs font-bold text-[#667269]">Gentleman Level</span>
           <strong className="serif mt-1 block text-4xl">{dashboard.progress.level}</strong>
@@ -37,7 +42,14 @@ export default async function StatusPage() {
         </div>
       </section>
 
-      <section className="card space-y-5 p-5">
+      <section className="section-block space-y-5 p-5">
+        <div className="section-heading mb-1">
+          <span className="section-heading__icon" aria-hidden="true">↗</span>
+          <div>
+            <p className="eyebrow">Abilities</p>
+            <h2>伸びている力</h2>
+          </div>
+        </div>
         {categories.map((category) => {
           const xp = statusMap.get(category.key) ?? 0;
           return (

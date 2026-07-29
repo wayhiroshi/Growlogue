@@ -3,7 +3,7 @@
 import type { DailyReviewResult } from "@growlogue/ai-coach";
 import { useState } from "react";
 
-export function DailyReviewCard() {
+export function DailyReviewCard({ characterName = "Lucien" }: { characterName?: string }) {
   const [review, setReview] = useState<DailyReviewResult | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -25,11 +25,11 @@ export function DailyReviewCard() {
   }
 
   return (
-    <section className="card mb-5 overflow-hidden">
+    <section className="section-block mb-5 overflow-hidden">
       <div className="flex items-center justify-between gap-4 p-5">
         <div>
           <p className="eyebrow">Daily review</p>
-          <h2 className="serif text-xl font-semibold">Lucienと振り返る</h2>
+          <h2 className="serif text-xl font-semibold">{characterName}と振り返る</h2>
         </div>
         {!review ? (
           <button
@@ -44,7 +44,7 @@ export function DailyReviewCard() {
       </div>
       {review ? (
         <div className="border-t border-[#173f3515] px-5 py-4" aria-live="polite">
-          <p className="serif leading-7">Lucien「{review.summary}」</p>
+          <p className="serif leading-7">{characterName}「{review.summary}」</p>
           <p className="mt-3 text-sm leading-6 text-[#4f5d54]">
             {review.nextAction}
           </p>

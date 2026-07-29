@@ -1,5 +1,6 @@
 import { AppNav } from "@/components/app-nav";
 import { HabitManager } from "@/components/habit-manager";
+import { PageHeader } from "@/components/page-header";
 import { ensureUserFoundation, listHabits } from "@/lib/game-service";
 import { requireSession } from "@/lib/session";
 
@@ -12,11 +13,12 @@ export default async function HabitsPage() {
   const habits = await listHabits(session.user.id);
   return (
     <main className="app-shell">
-      <p className="eyebrow">Training menu</p>
-      <h1 className="serif text-3xl font-semibold">習慣を整える</h1>
-      <p className="mt-2 mb-6 text-sm leading-6 text-[#667269]">
-        今の自分に必要なものだけを有効にします。休止しても履歴は残ります。
-      </p>
+      <PageHeader
+        description="今の自分に必要なものだけを有効に。休止しても、これまでの歩みは残ります。"
+        eyebrow="Training menu"
+        icon="✓"
+        title="習慣を整える"
+      />
       <HabitManager habits={habits} />
       <AppNav />
     </main>

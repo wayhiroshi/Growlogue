@@ -1,4 +1,5 @@
 import { OnboardingForm } from "@/components/onboarding-form";
+import { PageHeader } from "@/components/page-header";
 import { ensureUserFoundation } from "@/lib/game-service";
 import { requireSession } from "@/lib/session";
 import { redirect } from "next/navigation";
@@ -13,11 +14,12 @@ export default async function OnboardingPage() {
 
   return (
     <main className="app-shell">
-      <p className="eyebrow">Chapter 0</p>
-      <h1 className="serif text-3xl font-semibold">育てたい自分を選ぶ</h1>
-      <p className="mt-3 mb-7 leading-7 text-[#667269]">
-        毎日すべてをする必要はありません。まずは3つ以上選び、今日の一歩を作りましょう。
-      </p>
+      <PageHeader
+        description="毎日すべてをする必要はありません。まずは3つ以上選び、今日の小さな流れを作りましょう。"
+        eyebrow="Chapter 0"
+        icon="✦"
+        title="育てたい自分を選ぶ"
+      />
       <OnboardingForm />
     </main>
   );

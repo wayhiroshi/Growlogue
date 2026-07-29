@@ -7,9 +7,20 @@ export const britishGentlemanWorld = {
   character: {
     id: "character-butler-alistair",
     name: "Lucien（ルシアン）",
-    personality: "面倒だが憎めない、決して見捨てない執事"
+    personality: "穏やかで聡明、決して見捨てない白兎の執事",
+    avatarUrl: "/images/companions/lucien.webp"
   }
 } as const;
+
+export const companions = [
+  britishGentlemanWorld.character,
+  {
+    id: "character-butler-rowan",
+    name: "Rowan（ローワン）",
+    personality: "快活で機転が利く、庭園を愛する赤狐の執事",
+    avatarUrl: "/images/companions/rowan.webp"
+  }
+] as const;
 
 export const categories = [
   { id: "category-body", key: "strength", name: "身体", statusName: "Strength", icon: "⚔️" },
