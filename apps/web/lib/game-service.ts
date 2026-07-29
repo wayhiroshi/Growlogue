@@ -3,6 +3,7 @@ import {
   butlerMessages,
   categories,
   companions,
+  getCompanionArtwork,
   habitTemplates,
   type ButlerMood
 } from "@growlogue/content";
@@ -371,7 +372,9 @@ export async function getDashboard(userId: string) {
       id: characterState.character.id,
       name: characterState.character.name,
       personality: characterState.character.personality,
-      avatarUrl: characterState.character.avatarUrl,
+      avatarUrl:
+        getCompanionArtwork(characterState.character.id, mood) ??
+        characterState.character.avatarUrl,
       mood,
       message: butlerMessages[mood][0]
     }

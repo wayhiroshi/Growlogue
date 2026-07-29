@@ -22,6 +22,26 @@ export const companions = [
   }
 ] as const;
 
+export const companionMoodArtwork = {
+  "character-butler-alistair": {
+    DELIGHTED: "/images/companions/lucien-delighted.webp",
+    PROUD: "/images/companions/lucien-proud.webp",
+    CHEERFUL: "/images/companions/lucien-cheerful.webp",
+    CALM: "/images/companions/lucien.webp",
+    WORRIED: "/images/companions/lucien-worried.webp",
+    LONELY: "/images/companions/lucien-lonely.webp",
+    SULKING: "/images/companions/lucien-sulking.webp"
+  }
+} as const;
+
+export function getCompanionArtwork(
+  characterId: string,
+  mood: ButlerMood
+): string | undefined {
+  if (characterId !== britishGentlemanWorld.character.id) return undefined;
+  return companionMoodArtwork[britishGentlemanWorld.character.id][mood];
+}
+
 export const categories = [
   { id: "category-body", key: "strength", name: "身体", statusName: "Strength", icon: "⚔️" },
   { id: "category-writing", key: "writing", name: "執筆", statusName: "Writing", icon: "✒️" },
