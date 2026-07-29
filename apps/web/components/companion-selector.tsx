@@ -27,8 +27,8 @@ export function CompanionSelector({
     if (characterId === selectedId || pendingId) return;
     setPendingId(characterId);
     setMessage("");
-    const response = await fetch("/api/v1/characters/select", {
-      method: "POST",
+    const response = await fetch("/api/v1/preferences", {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ characterId })
     });

@@ -394,23 +394,6 @@ export async function listCompanions(userId: string) {
   };
 }
 
-export async function selectCompanion(userId: string, characterId: string) {
-  const { prisma } = getRuntime();
-  await ensureUserFoundation(userId);
-  const character = await prisma.character.findFirst({
-    where: {
-      id: characterId,
-      worldId: britishGentlemanWorld.id
-    }
-  });
-  if (!character) throw new Error("CHARACTER_NOT_FOUND");
-  await prisma.characterState.update({
-    where: { userId },
-    data: { characterId }
-  });
-  return character;
-}
-
 export async function getDailyReviewSnapshot(userId: string) {
   const dashboard = await getDashboard(userId);
   const { prisma } = getRuntime();
