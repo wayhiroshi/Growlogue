@@ -42,3 +42,12 @@ Life UnlocksはHabitやXPへ直接依存しない独立ドメインとする。�
 収入、体重、金額、資産、自由記述は共有しない。
 
 詳細仕様は[`share-cards-spec.md`](./share-cards-spec.md)を正本とする。
+
+## 月間レポート
+
+本人は一か月の達成、XP、Daily Clear、Perfect、能力成長をカレンダーで
+振り返ることができる。集計結果から月間称号と今月もっとも育った能力を
+重点テーマとして表示する。重点テーマは初期版では振り返り演出のみとし、
+XP倍率を変更しない。
+
+詳細仕様は[`monthly-reports-spec.md`](./monthly-reports-spec.md)を正本とする。
