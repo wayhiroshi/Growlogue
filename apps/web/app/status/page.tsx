@@ -56,12 +56,20 @@ export default async function StatusPage() {
           );
         })}
       </section>
-      <Link
-        className="button-secondary mt-5 w-full"
-        href="/reports/weekly"
-      >
-        週間レポートを見る
-      </Link>
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <Link
+          className="button-secondary w-full text-center"
+          href="/reports/weekly"
+        >
+          週間レポート
+        </Link>
+        <Link
+          className="button-secondary w-full text-center"
+          href="/reports/monthly"
+        >
+          月間レポート
+        </Link>
+      </div>
       <AppNav />
     </main>
   );
