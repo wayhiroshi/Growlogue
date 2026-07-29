@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -67,11 +66,12 @@ export function CompanionSelector({
             >
               <span className="companion-option__image">
                 {companion.avatarUrl ? (
-                  <Image
+                  <img
                     alt=""
-                    fill
-                    sizes="(max-width: 768px) 42vw, 260px"
+                    height="1152"
+                    loading="lazy"
                     src={companion.avatarUrl}
+                    width="768"
                   />
                 ) : null}
               </span>

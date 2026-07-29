@@ -1,5 +1,4 @@
 import { getCurrentSession } from "@/lib/session";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -29,12 +28,12 @@ export default async function LandingPage() {
           </div>
         </div>
         <div className="landing-hero__art">
-          <Image
+          <img
             alt="英国庭園に立つ白兎の執事Lucien"
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 360px"
+            fetchPriority="high"
+            height="1152"
             src="/images/companions/lucien.webp"
+            width="768"
           />
           <span>Lucien</span>
         </div>

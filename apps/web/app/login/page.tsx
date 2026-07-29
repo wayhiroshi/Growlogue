@@ -1,6 +1,5 @@
 import { LoginForm } from "@/components/login-form";
 import { getCurrentSession } from "@/lib/session";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -17,12 +16,12 @@ export default async function LoginPage() {
       <div className="mx-auto w-full max-w-md">
         <div className="login-companion">
           <div className="login-companion__image">
-            <Image
+            <img
               alt=""
-              fill
-              priority
-              sizes="96px"
+              fetchPriority="high"
+              height="1152"
               src="/images/companions/lucien.webp"
+              width="768"
             />
           </div>
           <div>

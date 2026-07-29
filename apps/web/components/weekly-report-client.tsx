@@ -421,7 +421,6 @@ export function WeeklyReportClient() {
           {share?.imageUrl ? (
             // The private, expiring image is intentionally served without
             // Next Image optimization so its bearer URL is not cached.
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               alt="生成した週間共有カード"
               className="w-full rounded-xl border border-[#d7c8aa]"

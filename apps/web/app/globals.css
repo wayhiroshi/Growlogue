@@ -323,6 +323,8 @@ textarea:focus-visible {
 }
 
 .companion-hero__image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 50% 24%;
 }
@@ -649,6 +651,8 @@ textarea:focus-visible {
 }
 
 .dream-feature__image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 46% 50%;
 }
@@ -790,6 +794,8 @@ textarea:focus-visible {
 }
 
 .companion-option__image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 50% 22%;
 }
@@ -889,6 +895,8 @@ textarea:focus-visible {
 }
 
 .landing-hero__art img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 50% 20%;
 }
@@ -934,6 +942,8 @@ textarea:focus-visible {
 }
 
 .login-companion__image img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   object-position: 50% 18%;
 }

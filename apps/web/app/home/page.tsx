@@ -4,7 +4,6 @@ import { MissionList } from "@/components/mission-list";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
 import { getPrimaryWish } from "@/lib/life-unlocks-service";
 import { requireSession } from "@/lib/session";
-import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -58,12 +57,12 @@ export default async function HomePage() {
       <section className="companion-hero">
         <div className="companion-hero__image">
           {dashboard.character.avatarUrl ? (
-            <Image
+            <img
               alt={`${dashboard.character.name}のポートレート`}
-              fill
-              priority
-              sizes="(max-width: 768px) 46vw, 340px"
+              fetchPriority="high"
+              height="1152"
               src={dashboard.character.avatarUrl}
+              width="768"
             />
           ) : null}
           <span className="companion-hero__mood">{dashboard.character.mood}</span>
@@ -122,11 +121,12 @@ export default async function HomePage() {
 
       <section className="dream-feature">
         <div className="dream-feature__image" aria-hidden="true">
-          <Image
+          <img
             alt=""
-            fill
-            sizes="(max-width: 768px) 100vw, 720px"
+            height="675"
+            loading="lazy"
             src="/images/scenes/life-unlocks-garden.webp"
+            width="1200"
           />
         </div>
         <div className="dream-feature__body">

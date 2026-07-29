@@ -5,6 +5,12 @@ import nextTypeScript from "eslint-config-next/typescript";
 export default defineConfig([
   ...nextCoreWebVitals,
   ...nextTypeScript,
+  {
+    rules: {
+      // Pre-compressed local WebP art avoids the optional Cloudflare Images runtime.
+      "@next/next/no-img-element": "off"
+    }
+  },
   globalIgnores([
     ".next/**",
     ".open-next/**",

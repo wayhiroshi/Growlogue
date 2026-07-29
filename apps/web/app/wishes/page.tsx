@@ -3,7 +3,6 @@ import { PageHeader } from "@/components/page-header";
 import { WishManagerLoader } from "@/components/wish-manager-loader";
 import { listWishes } from "@/lib/life-unlocks-service";
 import { requireSession } from "@/lib/session";
-import Image from "next/image";
 
 export const metadata = { title: "人生の解放" };
 export const dynamic = "force-dynamic";
@@ -20,11 +19,12 @@ export default async function WishesPage() {
         title="人生の解放"
       />
       <div className="page-illustration" aria-hidden="true">
-        <Image
+        <img
           alt=""
-          fill
-          sizes="(max-width: 768px) 100vw, 720px"
+          height="675"
+          loading="lazy"
           src="/images/scenes/life-unlocks-garden.webp"
+          width="1200"
         />
         <span>現実の人生が、報酬になる。</span>
       </div>
