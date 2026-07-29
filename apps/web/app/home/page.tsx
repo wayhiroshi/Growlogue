@@ -1,4 +1,5 @@
 import { AppNav } from "@/components/app-nav";
+import { DailyReviewCard } from "@/components/daily-review-card";
 import { MissionList } from "@/components/mission-list";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
 import { getPrimaryWish } from "@/lib/life-unlocks-service";
@@ -97,6 +98,8 @@ export default async function HomePage() {
           </span>
         </div>
       </div>
+
+      <DailyReviewCard />
 
       <section className="card mb-5 overflow-hidden">
         <div className="flex items-center justify-between gap-4 p-5">

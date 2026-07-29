@@ -38,7 +38,10 @@ Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`work
   振り返り表示に限定し、この段階ではXP倍率を変更しない。
 - OpenNext Workerの容量を継続的に確保するため、月間レポートのD1集計は
   非公開`growlogue-reports` Workerへ分離し、WebからService Bindingで呼び出す。
-- AI伴走はPhase 6とし、Life Unlocksの実利用を確認してからWish提案とQuest生成を追加する。
+- Phase 6の最初の縦切りとして、非公開AI Worker、集計値だけを使うLucienの
+  日次レビュー、安全検査、Moderation、決定的フォールバックを追加する。
+- AI伴走の日次レビューを本人利用で確認した後、翌日提案と通知文の言い換えへ
+  進む。Wish提案とQuest生成はさらに後とし、Condition FactはAIへ送らない。
 - 複数ユーザー、世界観、課金、ネイティブアプリはその後に段階展開する。
 
 ## 完了判定

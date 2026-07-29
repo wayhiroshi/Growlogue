@@ -14,9 +14,10 @@
     "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:generate": "pnpm --filter @growlogue/db generate",
     "db:migrate:local": "pnpm --filter @growlogue/web db:migrate:local",
-    "cf:typegen": "pnpm --filter @growlogue/web cf:typegen && pnpm --filter @growlogue/reports-worker cf:typegen",
-    "preview:workers": "pnpm --filter @growlogue/web exec opennextjs-cloudflare build && pnpm --filter @growlogue/web exec wrangler dev -c wrangler.jsonc -c ../reports/wrangler.jsonc",
+    "cf:typegen": "pnpm --filter @growlogue/web cf:typegen && pnpm --filter @growlogue/reports-worker cf:typegen && pnpm --filter @growlogue/ai-worker cf:typegen",
+    "preview:workers": "pnpm --filter @growlogue/web exec opennextjs-cloudflare build && pnpm --filter @growlogue/web exec wrangler dev -c wrangler.jsonc -c ../reports/wrangler.jsonc -c ../ai/wrangler.jsonc",
     "deploy:reports": "pnpm --filter @growlogue/reports-worker deploy",
+    "deploy:ai": "pnpm --filter @growlogue/ai-worker deploy",
     "preview": "pnpm --filter @growlogue/web preview",
     "deploy": "pnpm --filter @growlogue/web deploy"
   },

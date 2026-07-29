@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "1.6.25",
+    "@growlogue/ai-coach": "workspace:*",
     "@growlogue/content": "workspace:*",
     "@growlogue/db": "workspace:*",
     "@growlogue/domain": "workspace:*",

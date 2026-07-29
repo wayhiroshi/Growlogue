@@ -9,6 +9,9 @@ Life Unlocksでは、現実で実現したいことをWishとして登録し、�
 達成すると、現実のRewardを解放できます。評価ロジックはHabitやXPから独立した
 Condition Engineとして実装しています。
 
+Phase 6の日次レビューは非公開AI Workerへ分離し、本人が明示的に操作した時だけ
+匿名化した日次集計を使います。AI未設定・停止時も固定レビューで動作します。
+
 ## 必要環境
 
 - Node.js 24.14.0
@@ -39,6 +42,9 @@ pnpm dev
 | `BETTER_AUTH_SECRET` | 必須 | セッション署名用Secret（32文字以上） |
 | `BETTER_AUTH_URL` | 必須 | 認証APIの公開オリジン |
 | `NEXT_PUBLIC_APP_URL` | 必須 | Webアプリの公開オリジン |
+
+AI伴走の環境変数と有効化手順は
+[`docs/ai-coach-spec.md`](docs/ai-coach-spec.md)を参照してください。
 
 本番値は`.dev.vars`から転記せず、Workers Secretsへ個別に登録します。
 

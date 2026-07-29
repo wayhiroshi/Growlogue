@@ -21,6 +21,10 @@
     {
       "binding": "REPORTS",
       "service": "growlogue-reports"
+    },
+    {
+      "binding": "AI_COACH",
+      "service": "growlogue-ai"
     }
   ],
   "r2_buckets": [

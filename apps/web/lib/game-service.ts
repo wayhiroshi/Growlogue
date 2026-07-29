@@ -366,6 +366,29 @@ export async function getDashboard(userId: string) {
   };
 }
 
+export async function getDailyReviewSnapshot(userId: string) {
+  const dashboard = await getDashboard(userId);
+  const { prisma } = getRuntime();
+  const earned = await prisma.xpLedger.aggregate({
+    where: {
+      userId,
+      gameDate: dashboard.gameDate
+    },
+    _sum: { amount: true }
+  });
+  return {
+    gameDate: dashboard.gameDate,
+    dayMode: dashboard.dayMode,
+    coreCompleted: dashboard.daily.coreCompleted,
+    totalCompleted: dashboard.daily.totalCompleted,
+    totalMissions: dashboard.daily.totalMissions,
+    earnedXp: Math.max(0, earned._sum.amount ?? 0),
+    currentStreak: dashboard.streak.currentDays,
+    dailyClear: dashboard.daily.isDailyClear,
+    perfect: dashboard.daily.isPerfect
+  };
+}
+
 export async function getTodayMode(userId: string, now = new Date()) {
   const { prisma } = getRuntime();
   const profile = await ensureUserFoundation(userId);
