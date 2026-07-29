@@ -13,6 +13,16 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "browser": {
+    "binding": "BROWSER",
+    "remote": true
+  },
+  "r2_buckets": [
+    {
+      "binding": "SHARE_CARDS",
+      "bucket_name": "growlogue-assets"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

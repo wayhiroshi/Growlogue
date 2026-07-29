@@ -25,6 +25,21 @@
 
 R2はPhase 1〜4では使用しない。共有カード画像の保存が必要になるPhase 5で、利用料金と権限を再確認してから追加する。
 
+## Phase 5 週間共有カード
+
+- R2: `growlogue-assets`（Standard、非公開）
+- Web bindings: `SHARE_CARDS`、`BROWSER`
+- 画像: Browser Run Quick Actionで生成する1200×630px PNG
+- 公開面: `/share/:token`と`/share/:token/image`
+
+公開前にR2とBrowser Runの最新料金・無料枠、Cloudflareアカウント、既存バケットを
+読み取り確認する。`growlogue-assets`を作成した後、R2とBrowser Run bindingsを
+含むWeb Workerだけを公開する。R2の`r2.dev`公開は有効化しない。
+
+公開後は、共有カード生成、PNGのContent-Type、有効URLの200、失効後のページと
+画像の404を確認する。失敗時はWeb Workerを直前versionへ戻す。新規R2オブジェクトは
+非公開のため、Workerを戻した時点で外部からは参照できない。
+
 ## 検証
 
 - 許可メールだけが初回登録できる。
