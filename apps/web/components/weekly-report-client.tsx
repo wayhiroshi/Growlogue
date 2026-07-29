@@ -15,6 +15,14 @@ const categoryMap = new Map<string, (typeof categories)[number]>(
   categories.map((category) => [category.key, category])
 );
 
+interface WeeklyShare {
+  id: string;
+  expiresAt: string;
+  url: string | null;
+  imageUrl: string | null;
+  note?: string;
+}
+
 function shortDate(value: string) {
   const [, month, day] = value.split("-");
   return `${Number(month)}/${Number(day)}`;
@@ -32,6 +40,13 @@ export function WeeklyReportClient() {
       : null;
   const [report, setReport] = useState<WeeklyReportView | null>(null);
   const [error, setError] = useState("");
+  const [share, setShare] = useState<WeeklyShare | null>(null);
+  const [shareError, setShareError] = useState("");
+  const [shareMessage, setShareMessage] = useState("");
+  const [includeCategoryXp, setIncludeCategoryXp] = useState(true);
+  const [includeStreak, setIncludeStreak] = useState(false);
+  const [expiresInDays, setExpiresInDays] = useState<1 | 7 | 30>(7);
+  const [creatingShare, setCreatingShare] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -53,6 +68,30 @@ export function WeeklyReportClient() {
       }
       const body = (await response.json()) as { report: WeeklyReportView };
       setReport(body.report);
+      try {
+        const shareResponse = await fetch(
+          `/api/v1/share-cards?weekStart=${encodeURIComponent(
+            body.report.weekStart
+          )}`,
+          { signal: controller.signal }
+        );
+        if (shareResponse.ok) {
+          const shareBody = (await shareResponse.json()) as {
+            share: WeeklyShare | null;
+          };
+          setShare(shareBody.share);
+        } else {
+          setShareError("共有状態を読み込めませんでした。");
+        }
+      } catch (shareLoadError: unknown) {
+        if (
+          shareLoadError instanceof DOMException &&
+          shareLoadError.name === "AbortError"
+        ) {
+          throw shareLoadError;
+        }
+        setShareError("共有状態を読み込めませんでした。");
+      }
     };
     void load().catch((loadError: unknown) => {
       if (
@@ -79,7 +118,102 @@ export function WeeklyReportClient() {
 
   const moveWeek = (weekStart: string) => {
     setReport(null);
+    setShare(null);
+    setShareError("");
+    setShareMessage("");
     router.push(`/reports/weekly?week=${weekStart}`);
+  };
+
+  const createShare = async () => {
+    setCreatingShare(true);
+    setShareError("");
+    setShareMessage("");
+    try {
+      const response = await fetch("/api/v1/share-cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          weekStart: report.weekStart,
+          expiresInDays,
+          includeCategoryXp,
+          includeStreak
+        })
+      });
+      if (response.status === 401) {
+        router.replace("/login");
+        return;
+      }
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as {
+          error?: { message?: string };
+        } | null;
+        setShareError(
+          body?.error?.message ??
+            "共有カードを生成できませんでした。"
+        );
+        return;
+      }
+      const body = (await response.json()) as { share: WeeklyShare };
+      setShare(body.share);
+      setShareMessage("共有カードを作成しました。");
+    } catch {
+      setShareError("共有カードを生成できませんでした。");
+    } finally {
+      setCreatingShare(false);
+    }
+  };
+
+  const shareCard = async () => {
+    if (!share?.url) return;
+    setShareError("");
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "Growlogue 週間レポート",
+          text: "一週間の成長記録です。",
+          url: share.url
+        });
+      } catch (shareFailure: unknown) {
+        if (
+          shareFailure instanceof DOMException &&
+          shareFailure.name === "AbortError"
+        ) {
+          return;
+        }
+        setShareError("共有メニューを開けませんでした。");
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(share.url);
+      setShareMessage("共有URLをコピーしました。");
+    } catch {
+      setShareError("共有URLをコピーできませんでした。");
+    }
+  };
+
+  const revokeShare = async () => {
+    if (
+      !share ||
+      !window.confirm("この共有リンクを無効にしますか？")
+    ) {
+      return;
+    }
+    setShareError("");
+    try {
+      const response = await fetch(
+        `/api/v1/share-cards/${encodeURIComponent(share.id)}/revoke`,
+        { method: "POST" }
+      );
+      if (!response.ok) {
+        setShareError("共有リンクを無効にできませんでした。");
+        return;
+      }
+      setShare(null);
+      setShareMessage("共有リンクを無効にしました。");
+    } catch {
+      setShareError("共有リンクを無効にできませんでした。");
+    }
   };
 
   return (
@@ -231,6 +365,122 @@ export function WeeklyReportClient() {
               ? `${report.topHabit.title} ${report.topHabit.completedCount}回`
               : "まだありません"}
           </strong>
+        </div>
+      </section>
+
+      <section className="card mb-8 overflow-hidden">
+        <div className="bg-[#173f35] p-5 text-white">
+          <p className="text-xs font-black tracking-widest text-[#d9bd84]">
+            SHARE YOUR CHRONICLE
+          </p>
+          <h2 className="serif mt-2 text-2xl font-semibold">
+            週間カードを共有する
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-white/75">
+            Habit名、Wish、収入・体重・金額などの非公開情報は含まれません。
+          </p>
+        </div>
+        <div className="space-y-4 p-5">
+          <label className="flex min-h-12 items-center justify-between gap-4 rounded-xl bg-[#f1ecdf] px-4 py-3 font-bold">
+            能力XPを含める
+            <input
+              checked={includeCategoryXp}
+              className="h-5 w-5 accent-[#173f35]"
+              type="checkbox"
+              onChange={(event) =>
+                setIncludeCategoryXp(event.target.checked)
+              }
+            />
+          </label>
+          <label className="flex min-h-12 items-center justify-between gap-4 rounded-xl bg-[#f1ecdf] px-4 py-3 font-bold">
+            連続記録を含める
+            <input
+              checked={includeStreak}
+              className="h-5 w-5 accent-[#173f35]"
+              type="checkbox"
+              onChange={(event) => setIncludeStreak(event.target.checked)}
+            />
+          </label>
+          <label className="block text-sm font-bold">
+            有効期間
+            <select
+              className="mt-2 min-h-12 w-full rounded-xl border border-[#d7c8aa] bg-white px-4"
+              value={expiresInDays}
+              onChange={(event) =>
+                setExpiresInDays(
+                  Number(event.target.value) as 1 | 7 | 30
+                )
+              }
+            >
+              <option value={1}>1日</option>
+              <option value={7}>7日</option>
+              <option value={30}>30日</option>
+            </select>
+          </label>
+
+          {share?.imageUrl ? (
+            // The private, expiring image is intentionally served without
+            // Next Image optimization so its bearer URL is not cached.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt="生成した週間共有カード"
+              className="w-full rounded-xl border border-[#d7c8aa]"
+              height={630}
+              src={share.imageUrl}
+              width={1200}
+            />
+          ) : null}
+          {share?.note ? (
+            <p className="rounded-xl bg-[#fff6df] p-3 text-xs leading-5 text-[#6c5a32]">
+              {share.note}
+            </p>
+          ) : null}
+          {shareError ? (
+            <p className="text-sm font-bold text-[#9f3e35]">{shareError}</p>
+          ) : null}
+          {shareMessage ? (
+            <p className="text-sm font-bold text-[#2f6556]">
+              {shareMessage}
+            </p>
+          ) : null}
+
+          {share?.url ? (
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                className="button-primary"
+                type="button"
+                onClick={() => void shareCard()}
+              >
+                共有する
+              </button>
+              <a
+                className="button-secondary text-center"
+                href={share.url}
+                rel="noreferrer"
+                target="_blank"
+              >
+                表示確認
+              </a>
+            </div>
+          ) : (
+            <button
+              className="button-primary w-full"
+              disabled={creatingShare}
+              type="button"
+              onClick={() => void createShare()}
+            >
+              {creatingShare ? "カードを生成中…" : "共有カードを作る"}
+            </button>
+          )}
+          {share ? (
+            <button
+              className="w-full py-2 text-sm font-bold text-[#9f3e35]"
+              type="button"
+              onClick={() => void revokeShare()}
+            >
+              この共有リンクを無効にする
+            </button>
+          ) : null}
         </div>
       </section>
     </>
