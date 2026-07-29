@@ -5,7 +5,7 @@ import {
   addGameMonths,
   isMonthKey,
   type MonthlyReportView
-} from "@/lib/monthly-report-domain";
+} from "@growlogue/reports";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 

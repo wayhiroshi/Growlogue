@@ -29,6 +29,12 @@
 - 指定時は`YYYY-MM`形式だけを受け付ける。
 - 本人のD1データだけを集計し、保存済みの月間スナップショットには依存しない。
 - Habit名を含むため、共有APIや公開URLからは返さない。
+- 本人認証と入力検証はWeb Workerで行い、D1集計はService Binding経由の非公開
+  `growlogue-reports` Workerで行う。
+- 内部WorkerへCookie、Authorization、接続元IPを転送しない。内部User IDだけを渡し、
+  Reports Worker側でもUser IDと月形式を検証する。
+- 内部Workerが利用できない場合は503を返し、Habit、Mission、XPのゲーム本体には
+  影響させない。
 
 ## 称号
 
@@ -51,3 +57,5 @@
 5. 未達成日を過度に赤くせず、空の月にも責めない固定コメントを表示する。
 6. 未認証、無効な月、他人のデータへアクセスできない。
 7. 週間レポートと能力画面から月間レポートへ移動できる。
+8. `growlogue-reports`は公開URLを持たず、Service Bindingからだけ呼び出せる。
+9. Web WorkerとReports Workerを別々にdry run・デプロイできる。

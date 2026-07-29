@@ -36,6 +36,8 @@ Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`work
 - Phase 5の第三の縦切りとして、本人専用の月間レポート、月間カレンダー、
   決定的な月間称号、能力XPから選ぶ重点テーマを追加する。重点テーマは
   振り返り表示に限定し、この段階ではXP倍率を変更しない。
+- OpenNext Workerの容量を継続的に確保するため、月間レポートのD1集計は
+  非公開`growlogue-reports` Workerへ分離し、WebからService Bindingで呼び出す。
 - AI伴走はPhase 6とし、Life Unlocksの実利用を確認してからWish提案とQuest生成を追加する。
 - 複数ユーザー、世界観、課金、ネイティブアプリはその後に段階展開する。
 

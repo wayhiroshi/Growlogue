@@ -12,7 +12,8 @@ const nextConfig: NextConfig = {
     "@growlogue/content",
     "@growlogue/db",
     "@growlogue/domain",
-    "@growlogue/life-unlocks"
+    "@growlogue/life-unlocks",
+    "@growlogue/reports"
   ],
   async rewrites() {
     return [
@@ -23,10 +24,6 @@ const nextConfig: NextConfig = {
       {
         source: "/api/v1/reports/weekly",
         destination: "/api/v1/wishes/_weekly-report"
-      },
-      {
-        source: "/api/v1/reports/monthly",
-        destination: "/api/v1/wishes/_monthly-report"
       },
       {
         source: "/api/v1/share-cards",

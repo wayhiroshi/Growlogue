@@ -42,7 +42,21 @@ R2はPhase 1〜4では使用しない。共有カード画像の保存が必要�
 
 ## Phase 5 月間レポート
 
-追加インフラやmigrationは不要。既存D1を本人認証後に都度集計する。
+Migrationは不要。既存D1を本人認証後に都度集計する。OpenNext Workerの容量を
+確保するため、D1集計は非公開の`growlogue-reports` Workerへ分離する。
+
+公開順序は次のとおり。
+
+1. `pnpm verify`を実行する。
+2. `pnpm --filter @growlogue/reports-worker build`とWebのOpenNext dry runを実行する。
+3. `pnpm --filter @growlogue/reports-worker deploy`で内部Workerを先に公開する。
+4. `pnpm --filter @growlogue/web deploy`でService Bindingを持つWeb Workerを公開する。
+5. Reports Workerに`workers.dev` URLとpreview URLがないことを確認する。
+
+Service Bindingは`REPORTS -> growlogue-reports`とする。Web Workerだけが公開APIを持ち、
+Reports WorkerへCookieや認証Secretを持たせない。ローカルでWorkers runtimeを
+確認する場合は、`pnpm preview:workers`でOpenNext build後にWebとReportsの2つの
+configをWranglerへ渡す。
 
 公開後に次を確認する。
 
@@ -51,6 +65,9 @@ R2はPhase 1〜4では使用しない。共有カード画像の保存が必要�
 3. `/api/v1/reports/monthly?month=YYYY-MM`が未認証では401になる。
 4. 達成、XP、Daily Clear、Perfect、能力別XPが週間レポートと矛盾しない。
 5. 390px幅でカレンダーと下部ナビゲーションに横スクロールが出ない。
+6. Web Workerの圧縮後サイズが3 MiB未満であり、今後の月間集計追加がWeb bundleを
+   増やさない境界になっている。
+7. Reports Workerを公開URLから直接呼べず、Service Binding経由だけで応答する。
 
 ## 検証
 
@@ -63,6 +80,8 @@ R2はPhase 1〜4では使用しない。共有カード画像の保存が必要�
 ## ロールバック
 
 - 問題時は直前のWorker versionへ戻す。
+- Reports分離の問題時はWeb Workerを分離前versionへ先に戻す。内部Reports Workerは
+  公開面を持たないため、即時削除せず原因確認と再公開に備えて残す。
 - D1のXP台帳は削除せず、修正migrationまたは相殺イベントで整合させる。
 - 新規公開を停止する場合はWorkerを削除せず、先にrouteまたはworkers.dev公開を無効化する。
 

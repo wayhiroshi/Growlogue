@@ -4,7 +4,7 @@ import {
   buildMonthlyReport,
   endOfGameMonth,
   isMonthKey
-} from "../lib/monthly-report-domain";
+} from "../src";
 
 describe("monthly report", () => {
   it("validates and moves calendar months", () => {

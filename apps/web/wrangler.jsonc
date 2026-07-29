@@ -17,6 +17,12 @@
     "binding": "BROWSER",
     "remote": true
   },
+  "services": [
+    {
+      "binding": "REPORTS",
+      "service": "growlogue-reports"
+    }
+  ],
   "r2_buckets": [
     {
       "binding": "SHARE_CARDS",

@@ -1,10 +1,29 @@
-import type {
-  CategoryXpRow,
-  HabitCompletionRow,
-  MissionDayRow,
-  ModeDayRow,
-  XpDayRow
-} from "./weekly-report-domain";
+export interface MissionDayRow {
+  gameDate: string;
+  totalMissions: number;
+  completedMissions: number;
+  coreCompleted: number;
+}
+
+export interface XpDayRow {
+  gameDate: string;
+  earnedXp: number;
+}
+
+export interface ModeDayRow {
+  gameDate: string;
+  mode: string;
+}
+
+export interface CategoryXpRow {
+  statusKey: string;
+  earnedXp: number;
+}
+
+export interface HabitCompletionRow {
+  title: string;
+  completedCount: number;
+}
 
 export interface MonthlyReportInput {
   monthStart: string;

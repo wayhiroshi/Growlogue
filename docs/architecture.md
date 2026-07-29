@@ -4,8 +4,10 @@
 
 - `apps/web`: Next.js UI、Better Auth、JSON API
 - `apps/scheduler`: 15分Cron、通知判定、Web Push配信、重複送信防止
+- `apps/reports`: 本人限定レポートのD1集計を行う非公開Worker
 - `packages/domain`: UIやDBに依存しないゲームルール
 - `packages/life-unlocks`: DBやHabitに依存しないCondition Engineと進捗計算
+- `packages/reports`: UIやDBに依存しないレポート集計ルールとAPI型
 - `packages/db`: Prismaモデル、D1 migration、原子的な書き込み
 - `packages/content`: 世界観、カテゴリ、習慣、執事文面
 
@@ -37,3 +39,16 @@ Condition EngineはDBを参照せず、`MetricFact[]`を入力として条件と
 ## API
 
 APIは`/api/v1`へ統一し、認証済みユーザーのIDを必ず所有者条件へ含める。状態遷移を伴う書き込みは入力検証とIdempotency-Keyを必須とする。
+
+## Reports Worker境界
+
+OpenNextのWeb Workerを無料枠の圧縮後3 MiB制限内に保つため、月間レポートのD1集計を
+`growlogue-reports`へ分離する。公開APIは従来どおり
+`GET /api/v1/reports/monthly`だけとし、Web WorkerでBetter Authの本人認証と入力検証を
+終えてからService Binding `REPORTS`で内部転送する。
+
+Reports Workerは`workers_dev: false`、`preview_urls: false`とし、公開routeを持たない。
+Web WorkerはCookie、Authorization、接続元IPを転送せず、認証済みUser IDだけを
+`X-Growlogue-User-Id`へ設定する。Reports Workerも月形式とUser IDを再検証し、
+すべてのD1 SQLへUser ID条件を含める。両Workerは同じ`@growlogue/reports`の決定的な
+集計ルールを使い、サービス障害時はWeb APIが503を返してゲーム本体を継続させる。
