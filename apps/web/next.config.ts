@@ -23,6 +23,22 @@ const nextConfig: NextConfig = {
       {
         source: "/api/v1/reports/weekly",
         destination: "/api/v1/wishes/_weekly-report"
+      },
+      {
+        source: "/api/v1/share-cards",
+        destination: "/api/v1/wishes/_share-cards"
+      },
+      {
+        source: "/api/v1/share-cards/:id/revoke",
+        destination: "/api/v1/wishes/_share-cards/:id/revoke"
+      },
+      {
+        source: "/share/:token/image",
+        destination: "/api/v1/wishes/_public-share/:token/image"
+      },
+      {
+        source: "/share/:token",
+        destination: "/api/v1/wishes/_public-share/:token"
       }
     ];
   }

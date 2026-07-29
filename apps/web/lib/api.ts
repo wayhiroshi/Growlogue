@@ -60,6 +60,20 @@ export function toApiError(error: unknown): Response {
       409
     );
   }
+  if (message === "SHARE_LINK_NOT_FOUND") {
+    return apiError(
+      "SHARE_LINK_NOT_FOUND",
+      "共有リンクが見つかりません。",
+      404
+    );
+  }
+  if (message === "SHARE_CARD_RENDER_FAILED") {
+    return apiError(
+      "SHARE_CARD_RENDER_FAILED",
+      "共有カードを生成できませんでした。時間をおいて再度お試しください。",
+      503
+    );
+  }
   console.error(
     JSON.stringify({
       message: "api_request_failed",
