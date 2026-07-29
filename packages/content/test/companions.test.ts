@@ -1,5 +1,6 @@
 import {
   britishGentlemanWorld,
+  butlerMoodLabels,
   companionMoodArtwork,
   getCompanionArtwork,
   type ButlerMood
@@ -27,5 +28,12 @@ describe("companion mood artwork", () => {
 
   it("falls back for companions without mood variants", () => {
     expect(getCompanionArtwork("character-butler-rowan", "CALM")).toBeUndefined();
+  });
+
+  it("provides Japanese-first bilingual labels for every mood", () => {
+    for (const mood of moods) {
+      expect(butlerMoodLabels[mood]).toMatch(/^[^A-Z]+ \/ [A-Z]+$/);
+      expect(butlerMoodLabels[mood]).toContain(mood);
+    }
   });
 });

@@ -107,6 +107,16 @@ export type ButlerMood =
   | "LONELY"
   | "SULKING";
 
+export const butlerMoodLabels: Record<ButlerMood, string> = {
+  DELIGHTED: "大喜び / DELIGHTED",
+  PROUD: "誇らしい / PROUD",
+  CHEERFUL: "ご機嫌 / CHEERFUL",
+  CALM: "穏やか / CALM",
+  WORRIED: "心配 / WORRIED",
+  LONELY: "寂しい / LONELY",
+  SULKING: "拗ね気味 / SULKING"
+};
+
 export const butlerMessages: Record<ButlerMood, readonly string[]> = {
   DELIGHTED: ["旦那様、本日は完璧でございます。屋敷中が誇らしげです。"],
   PROUD: ["見事なDaily Clearです。今日も人生ゲームが進みましたね。"],

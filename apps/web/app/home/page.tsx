@@ -4,6 +4,7 @@ import { MissionList } from "@/components/mission-list";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
 import { getPrimaryWish } from "@/lib/life-unlocks-service";
 import { requireSession } from "@/lib/session";
+import { butlerMoodLabels } from "@growlogue/content";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
@@ -65,7 +66,9 @@ export default async function HomePage() {
               width="768"
             />
           ) : null}
-          <span className="companion-hero__mood">{dashboard.character.mood}</span>
+          <span className="companion-hero__mood">
+            {butlerMoodLabels[dashboard.character.mood]}
+          </span>
         </div>
         <div className="companion-hero__body">
           <p className="eyebrow">Your companion</p>
