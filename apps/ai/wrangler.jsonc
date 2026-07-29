@@ -10,14 +10,6 @@
     "AI_ENABLED": "false",
     "AI_MODEL": "gpt-5.6-luna"
   },
-  "secrets": {
-    "required": [
-      "AI_GATEWAY_URL",
-      "AI_GATEWAY_TOKEN",
-      "OPENAI_API_KEY",
-      "AI_SAFETY_SECRET"
-    ]
-  },
   "observability": {
     "enabled": true,
     "logs": {

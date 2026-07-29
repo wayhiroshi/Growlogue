@@ -15,6 +15,13 @@ const JSON_HEADERS = {
   "X-Content-Type-Options": "nosniff"
 };
 
+interface AiConfiguredEnv extends CloudflareEnv {
+  AI_GATEWAY_URL: string;
+  AI_GATEWAY_TOKEN: string;
+  OPENAI_API_KEY: string;
+  AI_SAFETY_SECRET: string;
+}
+
 function fallback(
   snapshot: DailyReviewSnapshot,
   reason: string
@@ -47,7 +54,7 @@ async function safetyIdentifier(userId: string, secret: string): Promise<string>
     .join("");
 }
 
-function gatewayHeaders(env: CloudflareEnv): HeadersInit {
+function gatewayHeaders(env: AiConfiguredEnv): HeadersInit {
   return {
     Authorization: `Bearer ${env.OPENAI_API_KEY}`,
     "cf-aig-authorization": `Bearer ${env.AI_GATEWAY_TOKEN}`,
@@ -56,7 +63,7 @@ function gatewayHeaders(env: CloudflareEnv): HeadersInit {
 }
 
 async function requestAiReview(
-  env: CloudflareEnv,
+  env: AiConfiguredEnv,
   userId: string,
   snapshot: DailyReviewSnapshot
 ): Promise<DailyReviewResult | null> {
@@ -132,7 +139,7 @@ async function requestAiReview(
   return { source: "ai", ...validated };
 }
 
-function isConfigured(env: CloudflareEnv): boolean {
+function isConfigured(env: CloudflareEnv): env is AiConfiguredEnv {
   return Boolean(
     env.AI_GATEWAY_URL &&
       env.AI_GATEWAY_TOKEN &&
