@@ -3,16 +3,20 @@ import {
   butlerMessages,
   categories,
   companions,
+  getEncoreLucienMessage,
   getCompanionArtwork,
+  getHabitEncoreRule,
   habitTemplates,
   type ButlerMood
 } from "@growlogue/content";
 import {
   completeMissionAtomically,
+  recordMissionEncoreAtomically,
   revertMissionAtomically
 } from "@growlogue/db";
 import {
   calculateStreaks,
+  evaluateEncoreProgress,
   evaluateDailyProgress,
   getGameDate,
   levelFromXp,
@@ -157,7 +161,13 @@ export async function ensureTodayMissions(userId: string, now = new Date()) {
   const gameDate = getGameDate(now, profile.timezone, profile.resetHour);
   const existing = await prisma.dailyMission.findMany({
     where: { userId, gameDate },
-    include: { habit: { include: { category: true } } },
+    include: {
+      habit: { include: { category: true } },
+      events: {
+        where: { type: "ENCORE" },
+        select: { id: true }
+      }
+    },
     orderBy: { position: "asc" }
   });
   if (existing.length > 0) return { gameDate, missions: existing };
@@ -204,7 +214,13 @@ export async function ensureTodayMissions(userId: string, now = new Date()) {
     gameDate,
     missions: await prisma.dailyMission.findMany({
       where: { userId, gameDate },
-      include: { habit: { include: { category: true } } },
+      include: {
+        habit: { include: { category: true } },
+        events: {
+          where: { type: "ENCORE" },
+          select: { id: true }
+        }
+      },
       orderBy: { position: "asc" }
     })
   };
@@ -285,6 +301,43 @@ export async function mutateMission(
   return result;
 }
 
+export async function recordMissionEncore(
+  userId: string,
+  missionId: string,
+  idempotencyKey: string
+) {
+  const { db, prisma } = getRuntime();
+  const mission = await prisma.dailyMission.findFirst({
+    where: { id: missionId, userId },
+    select: { habitId: true }
+  });
+  if (!mission) throw new Error("MISSION_NOT_FOUND");
+  const rule = getHabitEncoreRule(mission.habitId);
+  if (!rule) throw new Error("MISSION_NOT_REPEATABLE");
+
+  const result = await recordMissionEncoreAtomically(db, {
+    userId,
+    missionId,
+    idempotencyKey,
+    now: new Date(),
+    bonusXp: rule.bonusXp,
+    maxRewardedEncores: rule.maxRewardedEncores,
+    maxDailyEncores: rule.maxDailyEncores
+  });
+  const progress = evaluateEncoreProgress({
+    encoreCount: result.encoreCount,
+    bonusXp: rule.bonusXp,
+    maxRewardedEncores: rule.maxRewardedEncores,
+    maxDailyEncores: rule.maxDailyEncores,
+    softCapSets: rule.softCapSets
+  });
+  return {
+    ...result,
+    progress,
+    lucienMessage: getEncoreLucienMessage(result.totalSets)
+  };
+}
+
 function distanceInDays(from: string, to: string): number {
   return Math.max(
     0,
@@ -356,11 +409,32 @@ export async function getDashboard(userId: string) {
                     : 15
     }
   });
+  const dashboardMissions = missions.map((mission) => {
+    const { events, ...missionData } = mission;
+    const rule = getHabitEncoreRule(mission.habitId);
+    if (!rule) return { ...missionData, encore: null };
+    const progress = evaluateEncoreProgress({
+      encoreCount: events.length,
+      bonusXp: rule.bonusXp,
+      maxRewardedEncores: rule.maxRewardedEncores,
+      maxDailyEncores: rule.maxDailyEncores,
+      softCapSets: rule.softCapSets
+    });
+    return {
+      ...missionData,
+      encore: {
+        amount: rule.amount,
+        unit: rule.unit,
+        actionLabel: rule.actionLabel,
+        ...progress
+      }
+    };
+  });
 
   return {
     gameDate,
     dayMode,
-    missions,
+    missions: dashboardMissions,
     daily,
     progress: {
       ...progress,

@@ -18,6 +18,8 @@ Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`work
 - 休息日を挟んだ連続記録を保護し、2日以上空いた最初の達成へ再開ボーナス5 XPを一度だけ付与する。
 - 明示操作によるPush購読、Service Worker、15分Cron、最大5件/日、23:30〜08:00の夜間停止を実装する。
 - Schedulerは公開HTTP面を持たず、VAPID秘密鍵をWorker Secretとして保持する。
+- 最小達成後の任意追加セットを「もう一巡」として記録し、追加しなくても成功の
+  まま、少量XPとLucienの短い反応で自然な継続を支援する。
 
 ## Phase 4: Life Unlocks
 

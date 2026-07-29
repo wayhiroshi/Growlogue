@@ -2,7 +2,9 @@ import {
   britishGentlemanWorld,
   butlerMoodLabels,
   companionMoodArtwork,
+  getEncoreLucienMessage,
   getCompanionArtwork,
+  getHabitEncoreRule,
   type ButlerMood
 } from "../src/index";
 import { describe, expect, it } from "vitest";
@@ -35,5 +37,21 @@ describe("companion mood artwork", () => {
       expect(butlerMoodLabels[mood]).toMatch(/^[^A-Z]+ \/ [A-Z]+$/);
       expect(butlerMoodLabels[mood]).toContain(mood);
     }
+  });
+
+  it("enables encores only for the initial strength and English habits", () => {
+    expect(getHabitEncoreRule("user-id:template-strength")).toMatchObject({
+      amount: 10,
+      unit: "回"
+    });
+    expect(getHabitEncoreRule("user-id:template-english")).toMatchObject({
+      amount: 1,
+      unit: "レッスン"
+    });
+    expect(getHabitEncoreRule("user-id:template-writing")).toBeUndefined();
+  });
+
+  it("closes a long encore run with a rest-positive Lucien message", () => {
+    expect(getEncoreLucienMessage(5)).toContain("休む");
   });
 });

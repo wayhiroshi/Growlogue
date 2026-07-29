@@ -20,6 +20,33 @@ export type ButlerMoodState =
   | "LONELY"
   | "SULKING";
 
+export interface EncoreProgress {
+  encoreCount: number;
+  totalSets: number;
+  canRecord: boolean;
+  nextXp: number;
+  softCapReached: boolean;
+}
+
+export function evaluateEncoreProgress(input: {
+  encoreCount: number;
+  bonusXp: number;
+  maxRewardedEncores: number;
+  maxDailyEncores: number;
+  softCapSets: number;
+}): EncoreProgress {
+  const encoreCount = Math.max(0, Math.floor(input.encoreCount));
+  const totalSets = encoreCount + 1;
+  return {
+    encoreCount,
+    totalSets,
+    canRecord: encoreCount < input.maxDailyEncores,
+    nextXp:
+      encoreCount < input.maxRewardedEncores ? Math.max(0, input.bonusXp) : 0,
+    softCapReached: totalSets >= input.softCapSets
+  };
+}
+
 export interface MissionSummary {
   role: MissionRole;
   status: MissionStatus;

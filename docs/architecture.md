@@ -30,6 +30,10 @@ Life Unlocksの6テーブルは、無料枠Workerの圧縮後3 MiB制限を守�
 
 XPは不変の台帳へ記録する。取り消しは元の記録を削除せず、負の相殺記録を追加する。
 
+「もう一巡」は既存の`ActivityEvent`へ`ENCORE`として保存する。初回達成とは
+別イベントにしてDaily ClearとPerfectの集計から除外し、追加XPは
+`XpLedger.reason = MISSION_ENCORE`で台帳化する。
+
 ## Life Unlocks境界
 
 Condition EngineはDBを参照せず、`MetricFact[]`を入力として条件とQuestを評価する。Web層のFact Providerが、総XP、カテゴリXP、連続日数、達成回数、手入力値を同じ形式へ変換する。

@@ -98,6 +98,59 @@ export const habitTemplates = [
   }
 ] as const;
 
+export interface HabitEncoreRule {
+  templateId: string;
+  amount: number;
+  unit: string;
+  actionLabel: string;
+  bonusXp: number;
+  maxRewardedEncores: number;
+  maxDailyEncores: number;
+  softCapSets: number;
+}
+
+export const habitEncoreRules: readonly HabitEncoreRule[] = [
+  {
+    templateId: "template-strength",
+    amount: 10,
+    unit: "回",
+    actionLabel: "もう10回",
+    bonusXp: 2,
+    maxRewardedEncores: 2,
+    maxDailyEncores: 4,
+    softCapSets: 3
+  },
+  {
+    templateId: "template-english",
+    amount: 1,
+    unit: "レッスン",
+    actionLabel: "もう1レッスン",
+    bonusXp: 2,
+    maxRewardedEncores: 2,
+    maxDailyEncores: 4,
+    softCapSets: 3
+  }
+] as const;
+
+export function getHabitEncoreRule(
+  habitId: string
+): HabitEncoreRule | undefined {
+  return habitEncoreRules.find(
+    (rule) =>
+      habitId === rule.templateId || habitId.endsWith(`:${rule.templateId}`)
+  );
+}
+
+export function getEncoreLucienMessage(totalSets: number): string {
+  if (totalSets >= 5) {
+    return "本日の積み重ね、実に見事です。ここで休むのも立派な鍛錬でございます。";
+  }
+  if (totalSets >= 3) {
+    return "三巡達成でございます。余力を残して終えるのも、明日への準備になります。";
+  }
+  return "もう一巡、確かに記録いたしました。少し休んでからでも構いません。";
+}
+
 export type ButlerMood =
   | "DELIGHTED"
   | "PROUD"

@@ -16,6 +16,17 @@ export interface MissionMutationResult {
   earnedXp: number;
 }
 
+export interface RecordMissionEncoreInput extends CompleteMissionInput {
+  bonusXp: number;
+  maxRewardedEncores: number;
+  maxDailyEncores: number;
+}
+
+export interface MissionEncoreResult extends MissionMutationResult {
+  encoreCount: number;
+  totalSets: number;
+}
+
 export function createPrisma(db: D1Database): PrismaClient {
   return new PrismaClient({ adapter: new PrismaD1(db) });
 }
@@ -234,6 +245,184 @@ export async function completeMissionAtomically(
   };
 }
 
+export async function recordMissionEncoreAtomically(
+  db: D1Database,
+  input: RecordMissionEncoreInput
+): Promise<MissionEncoreResult> {
+  const prisma = createPrisma(db);
+  const mission = await prisma.dailyMission.findFirst({
+    where: { id: input.missionId, userId: input.userId },
+    include: { habit: { include: { category: true } } }
+  });
+  if (!mission) throw new Error("MISSION_NOT_FOUND");
+  if (mission.status !== "COMPLETED") {
+    throw new Error("MISSION_NOT_COMPLETED");
+  }
+
+  const existing = await prisma.activityEvent.findFirst({
+    where: {
+      userId: input.userId,
+      idempotencyKey: input.idempotencyKey
+    },
+    include: { xpEntries: true }
+  });
+  if (existing) {
+    if (
+      existing.dailyMissionId !== input.missionId ||
+      existing.type !== "ENCORE"
+    ) {
+      throw new Error("IDEMPOTENCY_KEY_CONFLICT");
+    }
+    const encoreCount = await prisma.activityEvent.count({
+      where: { dailyMissionId: input.missionId, type: "ENCORE" }
+    });
+    return {
+      applied: false,
+      eventId: existing.id,
+      earnedXp: existing.xpEntries.reduce(
+        (total, entry) => total + entry.amount,
+        0
+      ),
+      encoreCount,
+      totalSets: encoreCount + 1
+    };
+  }
+
+  const currentEncoreCount = await prisma.activityEvent.count({
+    where: { dailyMissionId: input.missionId, type: "ENCORE" }
+  });
+  if (currentEncoreCount >= input.maxDailyEncores) {
+    throw new Error("ENCORE_LIMIT_REACHED");
+  }
+
+  const eventId = crypto.randomUUID();
+  const ledgerId = crypto.randomUUID();
+  const timestamp = iso(input.now);
+  const statusKey = mission.habit.category.key;
+  const results = await db.batch([
+    db
+      .prepare(
+        `INSERT INTO "ActivityEvent"
+          ("id", "userId", "dailyMissionId", "type", "idempotencyKey", "gameDate", "createdAt")
+         SELECT ?, ?, ?, 'ENCORE', ?, ?, ?
+         WHERE EXISTS (
+           SELECT 1 FROM "DailyMission"
+           WHERE "id" = ? AND "userId" = ? AND "status" = 'COMPLETED'
+         )
+         AND (
+           SELECT COUNT(*) FROM "ActivityEvent"
+           WHERE "dailyMissionId" = ? AND "type" = 'ENCORE'
+         ) < ?
+         ON CONFLICT("userId", "idempotencyKey") DO NOTHING`
+      )
+      .bind(
+        eventId,
+        input.userId,
+        input.missionId,
+        input.idempotencyKey,
+        mission.gameDate,
+        timestamp,
+        input.missionId,
+        input.userId,
+        input.missionId,
+        input.maxDailyEncores
+      ),
+    db
+      .prepare(
+        `INSERT INTO "ProjectionApplication" ("eventId", "appliedAt")
+         SELECT ?, ? WHERE changes() = 1`
+      )
+      .bind(eventId, timestamp),
+    db
+      .prepare(
+        `INSERT INTO "XpLedger"
+          ("id", "userId", "eventId", "amount", "reason", "statusKey", "gameDate", "createdAt")
+         SELECT ?, ?, ?, ?, 'MISSION_ENCORE', ?, ?, ?
+         WHERE ? > 0
+           AND EXISTS (
+             SELECT 1 FROM "ProjectionApplication" WHERE "eventId" = ?
+           )
+           AND (
+             SELECT COUNT(*) FROM "ActivityEvent"
+             WHERE "dailyMissionId" = ? AND "type" = 'ENCORE'
+           ) <= ?`
+      )
+      .bind(
+        ledgerId,
+        input.userId,
+        eventId,
+        input.bonusXp,
+        statusKey,
+        mission.gameDate,
+        timestamp,
+        input.bonusXp,
+        eventId,
+        input.missionId,
+        input.maxRewardedEncores
+      ),
+    db
+      .prepare(
+        `UPDATE "UserProgress"
+         SET "totalXp" = "totalXp" + ?, "updatedAt" = ?
+         WHERE "userId" = ?
+           AND EXISTS (SELECT 1 FROM "XpLedger" WHERE "id" = ?)`
+      )
+      .bind(input.bonusXp, timestamp, input.userId, ledgerId),
+    db
+      .prepare(
+        `INSERT INTO "StatusProgress" ("id", "userId", "statusKey", "xp", "updatedAt")
+         SELECT ?, ?, ?, ?, ?
+         WHERE EXISTS (SELECT 1 FROM "XpLedger" WHERE "id" = ?)
+         ON CONFLICT("userId", "statusKey")
+         DO UPDATE SET "xp" = "xp" + excluded."xp", "updatedAt" = excluded."updatedAt"`
+      )
+      .bind(
+        crypto.randomUUID(),
+        input.userId,
+        statusKey,
+        input.bonusXp,
+        timestamp,
+        ledgerId
+      )
+  ]);
+
+  const applied = (results[0]?.meta.changes ?? 0) === 1;
+  const earnedXp = (results[2]?.meta.changes ?? 0) === 1 ? input.bonusXp : 0;
+  const encoreCount = await prisma.activityEvent.count({
+    where: { dailyMissionId: input.missionId, type: "ENCORE" }
+  });
+  if (!applied) {
+    const racedEvent = await prisma.activityEvent.findFirst({
+      where: {
+        userId: input.userId,
+        idempotencyKey: input.idempotencyKey,
+        dailyMissionId: input.missionId,
+        type: "ENCORE"
+      },
+      include: { xpEntries: true }
+    });
+    if (!racedEvent) throw new Error("ENCORE_LIMIT_REACHED");
+    return {
+      applied: false,
+      eventId: racedEvent.id,
+      earnedXp: racedEvent.xpEntries.reduce(
+        (total, entry) => total + entry.amount,
+        0
+      ),
+      encoreCount,
+      totalSets: encoreCount + 1
+    };
+  }
+
+  return {
+    applied: true,
+    eventId,
+    earnedXp,
+    encoreCount,
+    totalSets: encoreCount + 1
+  };
+}
+
 export async function revertMissionAtomically(
   db: D1Database,
   input: RevertMissionInput
@@ -262,6 +451,10 @@ export async function revertMissionAtomically(
   if (!mission || !originalEvent || originalMissionXp === undefined) {
     throw new Error("COMPLETION_NOT_FOUND");
   }
+  const encoreCount = await prisma.activityEvent.count({
+    where: { dailyMissionId: input.missionId, type: "ENCORE" }
+  });
+  if (encoreCount > 0) throw new Error("ENCORE_EXISTS");
   if (mission.status !== "COMPLETED") {
     return { applied: false, eventId: null, earnedXp: 0 };
   }

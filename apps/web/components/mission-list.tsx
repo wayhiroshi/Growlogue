@@ -16,15 +16,25 @@ interface Mission {
       name: string;
     };
   };
+  encore: {
+    amount: number;
+    unit: string;
+    actionLabel: string;
+    encoreCount: number;
+    totalSets: number;
+    canRecord: boolean;
+    nextXp: number;
+    softCapReached: boolean;
+  } | null;
 }
 
 export function MissionList({ missions }: { missions: Mission[] }) {
   const router = useRouter();
-  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   async function toggle(mission: Mission) {
-    setPendingId(mission.id);
+    setPendingAction(`${mission.id}:toggle`);
     setMessage("");
     const action = mission.status === "COMPLETED" ? "revert" : "complete";
     const response = await fetch(`/api/v1/missions/${mission.id}/${action}`, {
@@ -34,7 +44,7 @@ export function MissionList({ missions }: { missions: Mission[] }) {
       }
     });
     if (!response.ok) {
-      setPendingId(null);
+      setPendingAction(null);
       setMessage("更新できませんでした。もう一度お試しください。");
       return;
     }
@@ -44,7 +54,39 @@ export function MissionList({ missions }: { missions: Mission[] }) {
         `お帰りなさいませ。再開ボーナスを含む ${result.earnedXp} XP を獲得しました。`
       );
     }
-    setPendingId(null);
+    setPendingAction(null);
+    router.refresh();
+  }
+
+  async function addEncore(mission: Mission) {
+    if (!mission.encore?.canRecord) return;
+    setPendingAction(`${mission.id}:encore`);
+    setMessage("");
+    const response = await fetch(`/api/v1/missions/${mission.id}/encore`, {
+      method: "POST",
+      headers: {
+        "Idempotency-Key": crypto.randomUUID()
+      }
+    });
+    const result = (await response.json()) as {
+      earnedXp?: number;
+      totalSets?: number;
+      lucienMessage?: string;
+      error?: { message?: string };
+    };
+    if (!response.ok) {
+      setPendingAction(null);
+      setMessage(
+        result.error?.message ??
+          "追加の積み重ねを記録できませんでした。もう一度お試しください。"
+      );
+      return;
+    }
+    const xpText = result.earnedXp ? ` +${result.earnedXp} XP。` : "。";
+    setMessage(
+      `${result.totalSets ?? mission.encore.totalSets + 1}セット目を記録しました${xpText}${result.lucienMessage ?? ""}`
+    );
+    setPendingAction(null);
     router.refresh();
   }
 
@@ -88,27 +130,90 @@ export function MissionList({ missions }: { missions: Mission[] }) {
               <div className="mission-timeline">
                 {group.missions.map((mission) => {
                   const complete = mission.status === "COMPLETED";
+                  const hasEncore = (mission.encore?.encoreCount ?? 0) > 0;
+                  const togglePending =
+                    pendingAction === `${mission.id}:toggle`;
+                  const encorePending =
+                    pendingAction === `${mission.id}:encore`;
                   return (
-                    <button
-                      aria-label={`${mission.habit.worldTitle}を${complete ? "未完了に戻す" : "完了する"}`}
-                      className={`mission-item ${complete ? "is-complete" : ""}`}
-                      disabled={pendingId === mission.id}
-                      key={mission.id}
-                      onClick={() => toggle(mission)}
-                      type="button"
-                    >
-                      <span className="mission-item__marker" aria-hidden="true">
-                        {complete ? "✓" : mission.habit.category.icon}
-                      </span>
-                      <span className="mission-item__body">
-                        <strong>{mission.habit.worldTitle}</strong>
-                        <small>{mission.habit.minimumRule}</small>
-                      </span>
-                      <span className="mission-item__xp">
-                        +{mission.xpSnapshot}
-                        <small>XP</small>
-                      </span>
-                    </button>
+                    <div className="mission-entry" key={mission.id}>
+                      <button
+                        aria-disabled={complete && hasEncore}
+                        aria-label={
+                          complete && hasEncore
+                            ? `${mission.habit.worldTitle}は追加セットを含めて完了済み`
+                            : `${mission.habit.worldTitle}を${complete ? "未完了に戻す" : "完了する"}`
+                        }
+                        className={`mission-item ${complete ? "is-complete" : ""} ${hasEncore ? "is-locked" : ""}`}
+                        disabled={togglePending || encorePending}
+                        onClick={() => {
+                          if (complete && hasEncore) {
+                            setMessage(
+                              "追加セットを記録済みです。最初の達成はそのまま残します。"
+                            );
+                            return;
+                          }
+                          void toggle(mission);
+                        }}
+                        type="button"
+                      >
+                        <span className="mission-item__marker" aria-hidden="true">
+                          {complete ? "✓" : mission.habit.category.icon}
+                        </span>
+                        <span className="mission-item__body">
+                          <strong>{mission.habit.worldTitle}</strong>
+                          <small>{mission.habit.minimumRule}</small>
+                        </span>
+                        <span className="mission-item__xp">
+                          +{mission.xpSnapshot}
+                          <small>XP</small>
+                        </span>
+                      </button>
+                      {complete && mission.encore ? (
+                        <div className="encore-panel">
+                          <div className="encore-panel__summary">
+                            <div>
+                              <strong>
+                                {mission.encore.totalSets}セット ·{" "}
+                                {mission.encore.totalSets *
+                                  mission.encore.amount}
+                                {mission.encore.unit}
+                              </strong>
+                              <span>
+                                {mission.encore.softCapReached
+                                  ? "ここで終えても十分な積み重ねです"
+                                  : "本日の任務は完了済みです"}
+                              </span>
+                            </div>
+                            <span aria-label={`${mission.encore.totalSets}セット達成`}>
+                              {Array.from(
+                                { length: mission.encore.totalSets },
+                                () => "●"
+                              ).join(" ")}
+                            </span>
+                          </div>
+                          {mission.encore.canRecord ? (
+                            <button
+                              className="encore-button"
+                              disabled={encorePending || togglePending}
+                              onClick={() => void addEncore(mission)}
+                              type="button"
+                            >
+                              <span>{mission.encore.actionLabel}</span>
+                              <small>
+                                {mission.encore.nextXp > 0
+                                  ? `+${mission.encore.nextXp} XP`
+                                  : "記録のみ"}
+                              </small>
+                            </button>
+                          ) : (
+                            <p className="encore-panel__closed">
+                              本日はここまで。Lucienとゆっくり休みましょう。
+                            </p>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>

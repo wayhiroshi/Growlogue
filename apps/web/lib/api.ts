@@ -33,6 +33,41 @@ export function toApiError(error: unknown): Response {
   if (message === "COMPLETION_NOT_FOUND") {
     return apiError("COMPLETION_NOT_FOUND", "達成記録が見つかりません。", 409);
   }
+  if (message === "MISSION_NOT_COMPLETED") {
+    return apiError(
+      "MISSION_NOT_COMPLETED",
+      "最初の達成後に、もう一巡を記録できます。",
+      409
+    );
+  }
+  if (message === "MISSION_NOT_REPEATABLE") {
+    return apiError(
+      "MISSION_NOT_REPEATABLE",
+      "このミッションは、もう一巡の対象ではありません。",
+      409
+    );
+  }
+  if (message === "ENCORE_LIMIT_REACHED") {
+    return apiError(
+      "ENCORE_LIMIT_REACHED",
+      "本日の記録上限に到達しました。ここで休むのも立派な鍛錬です。",
+      409
+    );
+  }
+  if (message === "ENCORE_EXISTS") {
+    return apiError(
+      "ENCORE_EXISTS",
+      "追加セットを記録済みのため、最初の達成は取り消せません。",
+      409
+    );
+  }
+  if (message === "IDEMPOTENCY_KEY_CONFLICT") {
+    return apiError(
+      "IDEMPOTENCY_KEY_CONFLICT",
+      "同じ操作キーが別の記録に使用されています。",
+      409
+    );
+  }
   if (message === "WISH_NOT_FOUND") {
     return apiError("WISH_NOT_FOUND", "Wishが見つかりません。", 404);
   }

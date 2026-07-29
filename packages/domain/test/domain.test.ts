@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateStreaks,
+  evaluateEncoreProgress,
   evaluateDailyProgress,
   getGameDate,
   getLocalMinute,
@@ -142,6 +143,57 @@ describe("butler mood", () => {
         dayMode: "SICK"
       })
     ).toBe("CALM");
+  });
+});
+
+describe("encore progress", () => {
+  it("rewards the first two encores without changing the initial set", () => {
+    expect(
+      evaluateEncoreProgress({
+        encoreCount: 0,
+        bonusXp: 2,
+        maxRewardedEncores: 2,
+        maxDailyEncores: 4,
+        softCapSets: 3
+      })
+    ).toEqual({
+      encoreCount: 0,
+      totalSets: 1,
+      canRecord: true,
+      nextXp: 2,
+      softCapReached: false
+    });
+    expect(
+      evaluateEncoreProgress({
+        encoreCount: 2,
+        bonusXp: 2,
+        maxRewardedEncores: 2,
+        maxDailyEncores: 4,
+        softCapSets: 3
+      })
+    ).toMatchObject({
+      totalSets: 3,
+      canRecord: true,
+      nextXp: 0,
+      softCapReached: true
+    });
+  });
+
+  it("stops accepting encores at the daily recording cap", () => {
+    expect(
+      evaluateEncoreProgress({
+        encoreCount: 4,
+        bonusXp: 2,
+        maxRewardedEncores: 2,
+        maxDailyEncores: 4,
+        softCapSets: 3
+      })
+    ).toMatchObject({
+      totalSets: 5,
+      canRecord: false,
+      nextXp: 0,
+      softCapReached: true
+    });
   });
 });
 
