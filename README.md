@@ -60,6 +60,8 @@ pnpm verify
 
 ```bash
 pnpm --filter @growlogue/web exec wrangler d1 migrations apply growlogue-db --remote
+pnpm deploy:game
+pnpm deploy:life-unlocks
 pnpm deploy
 ```
 

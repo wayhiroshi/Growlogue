@@ -52,6 +52,37 @@ importers:
         specifier: 4.114.0
         version: 4.114.0(@cloudflare/workers-types@5.20260726.1)
 
+  apps/game:
+    dependencies:
+      '@growlogue/content':
+        specifier: workspace:*
+        version: link:../../packages/content
+      '@growlogue/db':
+        specifier: workspace:*
+        version: link:../../packages/db
+      '@growlogue/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: 5.20260726.1
+        version: 5.20260726.1
+      '@types/node':
+        specifier: 24.10.1
+        version: 24.10.1
+      eslint:
+        specifier: 9.39.2
+        version: 9.39.2(jiti@2.7.0)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.10
+        version: 4.1.10(@types/node@24.10.1)(vite@8.1.5(@types/node@24.10.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.16.9)(yaml@2.9.0))
+      wrangler:
+        specifier: 4.114.0
+        version: 4.114.0(@cloudflare/workers-types@5.20260726.1)
+
   apps/life-unlocks:
     dependencies:
       '@growlogue/life-unlocks':

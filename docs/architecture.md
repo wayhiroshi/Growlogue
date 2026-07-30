@@ -3,6 +3,7 @@
 ## 境界
 
 - `apps/web`: Next.js UI、Better Auth、JSON API
+- `apps/game`: Mission、Habit、XP、Streak、Companionを所有する非公開Worker
 - `apps/scheduler`: 15分Cron、通知判定、Web Push配信、重複送信防止
 - `apps/reports`: 本人限定レポートのD1集計を行う非公開Worker
 - `apps/life-unlocks`: Wish、Quest、Reward、Condition Factを所有する非公開Worker
@@ -48,10 +49,21 @@ Service Binding `LIFE_UNLOCKS`へ送る。Cookie、Authorization、接続元IP�
 内部Workerへ渡さない。内部Workerは`workers_dev: false`、`preview_urls: false`とし、
 各SQLでもUser IDによる所有者条件を必須とする。
 
-Web WorkerはPrismaのWASMを扱えるWebpackビルドを使用する。Next.js設定で
-`?module`のWASMをWorker内へ埋め込むloaderを明示し、Cloudflareで実行時ファイル参照が
-発生しないようにする。同時にTurbopackによるPrisma／Better Authチャンクの重複を避ける。
-OpenNext dry runの圧縮後サイズとWorkers previewの認証APIを公開前に確認する。
+Web WorkerのPrisma WASMはOpenNextとCloudflareが正式に処理するTurbopackの
+`?module`経路を維持する。実行時のWASMファイル参照や`WebAssembly.Module()`による
+動的コンパイルへ変換しない。OpenNext dry runの圧縮後サイズと、Workers preview・
+本番双方の認証APIを公開前に確認する。
+
+## Game Worker境界
+
+Mission、Habit、XP、Streak、CompanionのD1処理は非公開`growlogue-game` Workerへ
+分離する。公開APIとBetter AuthはWeb Workerに残し、認証済みUser IDと検証済みJSONだけを
+Service Binding `GAME`へ送る。Cookie、Authorization、接続元IP、認証Secretは渡さない。
+
+Game Workerは`workers_dev: false`、`preview_urls: false`とし、Web Workerと同じD1を
+Bindingする。ミッションの達成・取消・もう一巡は、従来どおりD1 `batch()`と
+Idempotency-Keyで原子的に処理する。WebとGameの双方を圧縮後3 MiB未満に保ち、
+公開時はGameを先に、Service Bindingを持つWebを後にデプロイする。
 
 ## API
 

@@ -29,6 +29,10 @@
     {
       "binding": "LIFE_UNLOCKS",
       "service": "growlogue-life-unlocks"
+    },
+    {
+      "binding": "GAME",
+      "service": "growlogue-game"
     }
   ],
   "r2_buckets": [

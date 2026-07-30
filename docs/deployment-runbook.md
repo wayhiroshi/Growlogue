@@ -56,7 +56,7 @@ Migrationは不要。既存D1を本人認証後に都度集計する。OpenNext 
 Service Bindingは`REPORTS -> growlogue-reports`とする。Web Workerだけが公開APIを持ち、
 Reports WorkerへCookieや認証Secretを持たせない。ローカルでWorkers runtimeを
 確認する場合は、`pnpm preview:workers`でOpenNext build後にWeb、Reports、AI、
-Life UnlocksのconfigをWranglerへ渡す。
+Life Unlocks、GameのconfigをWranglerへ渡す。
 
 公開後に次を確認する。
 
@@ -116,3 +116,23 @@ Life UnlocksのconfigをWranglerへ渡す。
 
 問題時はWorkerを直前versionへ戻す。新テーブルは既存のHabit、Mission、XP、Streak、
 Pushデータから独立しているため、データを削除せず修正版migrationで前進する。
+
+## Core Game Worker
+
+- Worker: `growlogue-game`
+- Service Binding: `GAME -> growlogue-game`
+- 外部リソース追加: なし（既存`growlogue-db`を共有）
+- Secret追加: なし
+
+公開前に`pnpm verify`、Game Workerのdry run、WebのOpenNext dry runを実行し、
+両Workerの圧縮後サイズが無料枠の3 MiB未満であることを確認する。公開順序は次のとおり。
+
+1. `pnpm deploy:game`で非公開Game Workerを公開する。
+2. `pnpm deploy:life-unlocks`で非公開Life Unlocks Workerを公開する。
+3. `pnpm deploy`でService Bindingを持つWeb Workerを公開する。
+4. 本人セッションでホーム、習慣、能力、夢を読み込み、達成操作は一度だけ実端末で確認する。
+5. `growlogue-game`と`growlogue-life-unlocks`を公開URLから直接呼べないことを確認する。
+
+Game Workerの問題時は、まずWeb Workerを直前versionへ戻して新しいService Bindingの
+利用を止める。D1 migrationやデータ削除は行わず、Game Workerを修正版または直前versionへ
+戻してからWebを再公開する。
