@@ -1,4 +1,5 @@
 import { AppNav } from "@/components/app-nav";
+import { CompanionHero } from "@/components/companion-hero";
 import { DailyReviewCard } from "@/components/daily-review-card";
 import { MissionList } from "@/components/mission-list";
 import { ensureUserFoundation, getDashboard } from "@/lib/game-service";
@@ -55,48 +56,21 @@ export default async function HomePage() {
         </p>
       ) : null}
 
-      <section className="companion-hero">
-        <div className="companion-hero__image">
-          {dashboard.character.avatarUrl ? (
-            <img
-              alt={`${dashboard.character.name}のポートレート`}
-              fetchPriority="high"
-              height="1152"
-              src={dashboard.character.avatarUrl}
-              width="768"
-            />
-          ) : null}
-          <span className="companion-hero__mood">
-            {butlerMoodLabels[dashboard.character.mood]}
-          </span>
-        </div>
-        <div className="companion-hero__body">
-          <p className="eyebrow">Your companion</p>
-          <h2>{characterName}</h2>
-          <p className="companion-hero__message">
-            「{dashboard.character.message}」
-          </p>
-          <div className="progress-summary">
-            <div>
-              <strong>
-                {dashboard.daily.totalCompleted}/{dashboard.daily.totalMissions}
-              </strong>
-              <span>今日の完了</span>
-            </div>
-            <strong>{percent}%</strong>
-          </div>
-          <div
-            aria-label={`今日の進捗 ${percent}%`}
-            aria-valuemax={100}
-            aria-valuemin={0}
-            aria-valuenow={percent}
-            className="progress-track"
-            role="progressbar"
-          >
-            <div style={{ width: `${percent}%` }} />
-          </div>
-        </div>
-      </section>
+      <CompanionHero
+        avatarUrl={dashboard.character.avatarUrl}
+        characterName={characterName}
+        completed={dashboard.daily.totalCompleted}
+        fullName={dashboard.character.name}
+        message={
+          dashboard.character.message ??
+          "今日の小さな一歩を、ここから始めましょう。"
+        }
+        moodLabel={
+          butlerMoodLabels[dashboard.character.mood] ?? dashboard.character.mood
+        }
+        percent={percent}
+        total={dashboard.daily.totalMissions}
+      />
 
       <div className="metric-strip">
         <div>
@@ -120,7 +94,15 @@ export default async function HomePage() {
         </div>
       </div>
 
-      <MissionList missions={dashboard.missions} />
+      <MissionList
+        key={dashboard.missions
+          .map(
+            (mission) =>
+              `${mission.id}:${mission.status}:${mission.encore?.totalSets ?? 0}`
+          )
+          .join("|")}
+        missions={dashboard.missions}
+      />
 
       <section className="dream-feature">
         <div className="dream-feature__image" aria-hidden="true">

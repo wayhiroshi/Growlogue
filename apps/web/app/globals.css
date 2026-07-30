@@ -318,8 +318,14 @@ textarea:focus-visible {
 
 .companion-hero__image {
   position: relative;
+  display: block;
   min-height: 17.5rem;
   overflow: hidden;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
 }
 
 .companion-hero__image img {
@@ -327,6 +333,7 @@ textarea:focus-visible {
   height: 100%;
   object-fit: cover;
   object-position: 50% 24%;
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .companion-hero__image::after {
@@ -350,6 +357,50 @@ textarea:focus-visible {
   font-weight: 900;
   letter-spacing: 0.1em;
   backdrop-filter: blur(8px);
+}
+
+.companion-hero__tap {
+  position: absolute;
+  z-index: 1;
+  right: 0.65rem;
+  bottom: 0.8rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.5rem;
+  color: var(--green);
+  background: rgb(255 253 247 / 82%);
+  font-size: 0.52rem;
+  font-weight: 900;
+  opacity: 0;
+  transform: translateY(0.25rem);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  backdrop-filter: blur(8px);
+}
+
+.companion-hero__image:hover .companion-hero__tap,
+.companion-hero__image:focus-visible .companion-hero__tap {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.companion-hero.is-reacting .companion-hero__image img {
+  transform: translateY(-0.25rem) scale(1.025);
+}
+
+.companion-hero.is-reacting .companion-hero__message {
+  animation: companion-message 280ms ease-out;
+}
+
+@keyframes companion-message {
+  from {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .companion-hero__body {
@@ -534,6 +585,119 @@ textarea:focus-visible {
   position: relative;
 }
 
+.mission-feedback {
+  display: flex;
+  min-height: 3.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid rgb(63 110 93 / 18%);
+  border-radius: 1.1rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--green-soft);
+  box-shadow: var(--shadow);
+  animation: feedback-arrive 220ms ease-out;
+}
+
+.mission-feedback p {
+  margin: 0;
+  color: var(--green);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.mission-feedback button {
+  min-height: 2.35rem;
+  flex: 0 0 auto;
+  border: 1px solid rgb(63 110 93 / 24%);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  color: var(--green);
+  background: var(--surface);
+  font-size: 0.68rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.mission-milestone {
+  position: fixed;
+  z-index: 45;
+  top: max(1rem, env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  width: min(calc(100% - 2rem), 32rem);
+  align-items: center;
+  gap: 0.9rem;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 1.35rem;
+  padding: 0.9rem 1rem;
+  color: white;
+  background: rgb(23 63 53 / 94%);
+  box-shadow: 0 1rem 3rem rgb(11 37 29 / 28%);
+  transform: translateX(-50%);
+  animation: milestone-arrive 420ms cubic-bezier(0.2, 0.85, 0.2, 1);
+  backdrop-filter: blur(14px);
+}
+
+.mission-milestone.is-perfect {
+  color: #2d2411;
+  background: rgb(247 218 146 / 96%);
+}
+
+.mission-milestone > span {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--green);
+  background: white;
+  font-size: 1.2rem;
+}
+
+.mission-milestone p,
+.mission-milestone strong {
+  display: block;
+  margin: 0;
+}
+
+.mission-milestone p {
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.mission-milestone strong {
+  margin-top: 0.18rem;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  font-size: 0.82rem;
+}
+
+@keyframes feedback-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes milestone-arrive {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -1rem) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 .mission-item {
   position: relative;
   display: flex;
@@ -612,11 +776,42 @@ textarea:focus-visible {
 }
 
 .mission-item__xp {
+  position: relative;
   min-width: 2.5rem;
   color: var(--gold);
   font-size: 0.75rem;
   font-weight: 900;
   text-align: right;
+}
+
+.mission-item__xp-pop {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  width: max-content;
+  border-radius: 999px;
+  padding: 0.28rem 0.48rem;
+  color: white;
+  background: var(--gold);
+  font-size: 0.62rem;
+  box-shadow: 0 0.45rem 1.1rem rgb(79 57 17 / 18%);
+  animation: xp-pop 900ms cubic-bezier(0.2, 0.85, 0.2, 1) both;
+  pointer-events: none;
+}
+
+@keyframes xp-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.8);
+  }
+  24% {
+    opacity: 1;
+    transform: translateY(-0.2rem) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-1.3rem) scale(1);
+  }
 }
 
 .mission-item__xp small {

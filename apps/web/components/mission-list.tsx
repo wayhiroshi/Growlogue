@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Mission {
   id: string;
@@ -30,13 +30,108 @@ interface Mission {
 
 export function MissionList({ missions }: { missions: Mission[] }) {
   const router = useRouter();
+  const [visibleMissions, setVisibleMissions] = useState(missions);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [xpFeedback, setXpFeedback] = useState<{
+    missionId: string;
+    amount: number;
+  } | null>(null);
+  const [milestone, setMilestone] = useState<
+    "DAILY_CLEAR" | "PERFECT" | null
+  >(null);
+  const [undoMissionId, setUndoMissionId] = useState<string | null>(null);
+  const feedbackTimer = useRef<number | null>(null);
+  const milestoneTimer = useRef<number | null>(null);
+  const undoTimer = useRef<number | null>(null);
 
-  async function toggle(mission: Mission) {
+  useEffect(
+    () => () => {
+      if (feedbackTimer.current) window.clearTimeout(feedbackTimer.current);
+      if (milestoneTimer.current) window.clearTimeout(milestoneTimer.current);
+      if (undoTimer.current) window.clearTimeout(undoTimer.current);
+    },
+    []
+  );
+
+  function showXp(missionId: string, amount: number) {
+    if (feedbackTimer.current) window.clearTimeout(feedbackTimer.current);
+    setXpFeedback({ missionId, amount });
+    feedbackTimer.current = window.setTimeout(
+      () => setXpFeedback(null),
+      1_500
+    );
+  }
+
+  function showMilestone(
+    previousMissions: Mission[],
+    nextMissions: Mission[]
+  ) {
+    const core = nextMissions.filter((mission) => mission.role === "CORE");
+    const coreComplete = core.filter(
+      (mission) => mission.status === "COMPLETED"
+    ).length;
+    const previousCoreComplete = previousMissions.filter(
+      (mission) => mission.role === "CORE" && mission.status === "COMPLETED"
+    ).length;
+    const allComplete =
+      nextMissions.length > 0 &&
+      nextMissions.every((mission) => mission.status === "COMPLETED");
+    const previouslyAllComplete =
+      previousMissions.length > 0 &&
+      previousMissions.every((mission) => mission.status === "COMPLETED");
+    const nextMilestone =
+      allComplete &&
+      !previouslyAllComplete &&
+      nextMissions.length > core.length
+        ? "PERFECT"
+        : core.length > 0 &&
+            previousCoreComplete < core.length &&
+            coreComplete === core.length
+          ? "DAILY_CLEAR"
+          : null;
+    if (!nextMilestone) return;
+    if (milestoneTimer.current) window.clearTimeout(milestoneTimer.current);
+    setMilestone(nextMilestone);
+    milestoneTimer.current = window.setTimeout(
+      () => setMilestone(null),
+      2_400
+    );
+  }
+
+  function offerUndo(missionId: string) {
+    if (undoTimer.current) window.clearTimeout(undoTimer.current);
+    setUndoMissionId(missionId);
+    undoTimer.current = window.setTimeout(
+      () => setUndoMissionId(null),
+      5_000
+    );
+  }
+
+  async function mutateMission(
+    missionId: string,
+    action: "complete" | "revert"
+  ) {
+    const mission = visibleMissions.find((entry) => entry.id === missionId);
+    if (!mission) return;
+    const previousStatus = mission.status;
+    const nextStatus = action === "complete" ? "COMPLETED" : "PENDING";
+    const optimisticMissions = visibleMissions.map((entry) =>
+      entry.id === mission.id ? { ...entry, status: nextStatus } : entry
+    );
+
+    setVisibleMissions(optimisticMissions);
     setPendingAction(`${mission.id}:toggle`);
     setMessage("");
-    const action = mission.status === "COMPLETED" ? "revert" : "complete";
+    if (action === "complete") {
+      showXp(mission.id, mission.xpSnapshot);
+      showMilestone(visibleMissions, optimisticMissions);
+    } else {
+      setUndoMissionId(null);
+      setXpFeedback(null);
+      setMilestone(null);
+    }
+
     const response = await fetch(`/api/v1/missions/${mission.id}/${action}`, {
       method: "POST",
       headers: {
@@ -44,15 +139,30 @@ export function MissionList({ missions }: { missions: Mission[] }) {
       }
     });
     if (!response.ok) {
+      setVisibleMissions((current) =>
+        current.map((entry) =>
+          entry.id === mission.id
+            ? { ...entry, status: previousStatus }
+            : entry
+        )
+      );
+      setXpFeedback(null);
+      setMilestone(null);
       setPendingAction(null);
       setMessage("更新できませんでした。もう一度お試しください。");
       return;
     }
     const result = (await response.json()) as { earnedXp: number };
-    if (action === "complete" && result.earnedXp > mission.xpSnapshot) {
+    if (action === "complete") {
+      showXp(mission.id, result.earnedXp);
+      offerUndo(mission.id);
       setMessage(
-        `お帰りなさいませ。再開ボーナスを含む ${result.earnedXp} XP を獲得しました。`
+        result.earnedXp > mission.xpSnapshot
+          ? `お帰りなさいませ。再開ボーナスを含む ${result.earnedXp} XP を獲得しました。`
+          : `任務完了。${result.earnedXp} XPを物語に刻みました。`
       );
+    } else {
+      setMessage("達成を取り消しました。いつでも、もう一度始められます。");
     }
     setPendingAction(null);
     router.refresh();
@@ -86,6 +196,22 @@ export function MissionList({ missions }: { missions: Mission[] }) {
     setMessage(
       `${result.totalSets ?? mission.encore.totalSets + 1}セット目を記録しました${xpText}${result.lucienMessage ?? ""}`
     );
+    if (result.earnedXp) showXp(mission.id, result.earnedXp);
+    setVisibleMissions((current) =>
+      current.map((entry) =>
+        entry.id === mission.id && entry.encore
+          ? {
+              ...entry,
+              encore: {
+                ...entry.encore,
+                encoreCount: entry.encore.encoreCount + 1,
+                totalSets:
+                  result.totalSets ?? entry.encore.totalSets + 1
+              }
+            }
+          : entry
+      )
+    );
     setPendingAction(null);
     router.refresh();
   }
@@ -95,22 +221,49 @@ export function MissionList({ missions }: { missions: Mission[] }) {
       role: "CORE",
       label: "今日の中心",
       note: "3つでDaily Clear",
-      missions: missions.filter((mission) => mission.role === "CORE")
+      missions: visibleMissions.filter((mission) => mission.role === "CORE")
     },
     {
       role: "BONUS",
       label: "余力があれば",
       note: "すべてでPerfect",
-      missions: missions.filter((mission) => mission.role !== "CORE")
+      missions: visibleMissions.filter((mission) => mission.role !== "CORE")
     }
   ];
 
   return (
     <>
-      {message ? (
-        <p className="card mb-3 p-4 text-sm font-bold" role="status">
-          {message}
-        </p>
+      <div aria-atomic="true" aria-live="polite">
+        {message ? (
+          <div className="mission-feedback" role="status">
+            <p>{message}</p>
+            {undoMissionId ? (
+              <button
+                disabled={pendingAction === `${undoMissionId}:toggle`}
+                onClick={() => void mutateMission(undoMissionId, "revert")}
+                type="button"
+              >
+                取り消す
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {milestone ? (
+        <div
+          className={`mission-milestone ${milestone === "PERFECT" ? "is-perfect" : ""}`}
+          role="status"
+        >
+          <span aria-hidden="true">{milestone === "PERFECT" ? "✦" : "✓"}</span>
+          <div>
+            <p>{milestone === "PERFECT" ? "PERFECT DAY" : "DAILY CLEAR"}</p>
+            <strong>
+              {milestone === "PERFECT"
+                ? "今日の物語を、すべて進めました"
+                : "今日の中心を、やり遂げました"}
+            </strong>
+          </div>
+        </div>
       ) : null}
       <section className="mission-board" aria-labelledby="missions-heading">
         <div className="section-heading">
@@ -153,7 +306,10 @@ export function MissionList({ missions }: { missions: Mission[] }) {
                             );
                             return;
                           }
-                          void toggle(mission);
+                          void mutateMission(
+                            mission.id,
+                            complete ? "revert" : "complete"
+                          );
                         }}
                         type="button"
                       >
@@ -165,6 +321,11 @@ export function MissionList({ missions }: { missions: Mission[] }) {
                           <small>{mission.habit.minimumRule}</small>
                         </span>
                         <span className="mission-item__xp">
+                          {xpFeedback?.missionId === mission.id ? (
+                            <span className="mission-item__xp-pop" role="status">
+                              +{xpFeedback.amount} XP
+                            </span>
+                          ) : null}
                           +{mission.xpSnapshot}
                           <small>XP</small>
                         </span>
