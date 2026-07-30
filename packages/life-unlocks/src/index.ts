@@ -42,6 +42,90 @@ export interface QuestEvaluation {
   completed: boolean;
 }
 
+export interface ConditionInput {
+  metric: ConditionMetric;
+  operator: ConditionOperator;
+  targetValue: number;
+  baselineValue: number | null;
+  scopeKey: string | null;
+  label: string;
+  unit: string | null;
+  currentValue: number | null;
+}
+
+export interface CreateWishInput {
+  title: string;
+  description: string | null;
+  category: string;
+  icon: string;
+  priority: number;
+  questTitle: string;
+  rewardMessage: string;
+  conditions: ConditionInput[];
+}
+
+export interface CreateQuestInput {
+  title: string;
+  description: string | null;
+  conditions: ConditionInput[];
+}
+
+export interface UpdateWishInput {
+  title?: string | undefined;
+  description?: string | null | undefined;
+  category?: string | undefined;
+  icon?: string | undefined;
+  priority?: number | undefined;
+  status?: "ACTIVE" | "ARCHIVED" | undefined;
+}
+
+export interface WishConditionView {
+  id: string;
+  metric: string;
+  operator: string;
+  targetValue: number;
+  baselineValue: number | null;
+  scopeKey: string | null;
+  label: string;
+  unit: string | null;
+  position: number;
+  currentValue: number | null;
+  progressPercent: number;
+  completed: boolean;
+}
+
+export interface WishQuestView {
+  id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  progressPercent: number;
+  completed: boolean;
+  conditions: WishConditionView[];
+}
+
+export interface WishView {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  icon: string;
+  priority: number;
+  status: string;
+  unlockDate: string | null;
+  completedAt: string | null;
+  progressPercent: number;
+  unlockable: boolean;
+  lucienComment: string;
+  reward: {
+    id: string;
+    message: string;
+    unlockedAt: string | null;
+    completedAt: string | null;
+  } | null;
+  quests: WishQuestView[];
+}
+
 function clampPercent(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)));
 }

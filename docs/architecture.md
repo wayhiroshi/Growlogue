@@ -5,6 +5,7 @@
 - `apps/web`: Next.js UI、Better Auth、JSON API
 - `apps/scheduler`: 15分Cron、通知判定、Web Push配信、重複送信防止
 - `apps/reports`: 本人限定レポートのD1集計を行う非公開Worker
+- `apps/life-unlocks`: Wish、Quest、Reward、Condition Factを所有する非公開Worker
 - `packages/domain`: UIやDBに依存しないゲームルール
 - `packages/life-unlocks`: DBやHabitに依存しないCondition Engineと進捗計算
 - `packages/reports`: UIやDBに依存しないレポート集計ルールとAPI型
@@ -36,9 +37,20 @@ XPは不変の台帳へ記録する。取り消しは元の記録を削除せず
 
 ## Life Unlocks境界
 
-Condition EngineはDBを参照せず、`MetricFact[]`を入力として条件とQuestを評価する。Web層のFact Providerが、総XP、カテゴリXP、連続日数、達成回数、手入力値を同じ形式へ変換する。
+Condition EngineはDBを参照せず、`MetricFact[]`を入力として条件とQuestを評価する。
+非公開`growlogue-life-unlocks` WorkerのFact Providerが、総XP、カテゴリXP、連続日数、
+達成回数、手入力値を同じ形式へ変換する。
 
 手入力値は`ConditionFact`へ時系列で追記し、Questの`currentValue`を直接上書きしない。WishのUnlockedとCompletedは`WishEvent`台帳を先にclaimし、D1 `batch()`でWish・Rewardへ反映する。
+
+公開APIと本人認証、Zod入力検証はWeb Workerに残し、検証済みUser IDとJSONだけを
+Service Binding `LIFE_UNLOCKS`へ送る。Cookie、Authorization、接続元IP、認証Secretは
+内部Workerへ渡さない。内部Workerは`workers_dev: false`、`preview_urls: false`とし、
+各SQLでもUser IDによる所有者条件を必須とする。
+
+Web WorkerはPrismaのWASMを扱えるWebpackビルドを使用する。Next.js設定で
+`asyncWebAssembly`と`?module`のWASM ruleを明示し、TurbopackによるPrisma／Better Auth
+チャンクの重複を避ける。OpenNext dry runの圧縮後サイズを公開前に確認する。
 
 ## API
 

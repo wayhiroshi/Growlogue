@@ -25,6 +25,10 @@
     {
       "binding": "AI_COACH",
       "service": "growlogue-ai"
+    },
+    {
+      "binding": "LIFE_UNLOCKS",
+      "service": "growlogue-life-unlocks"
     }
   ],
   "r2_buckets": [

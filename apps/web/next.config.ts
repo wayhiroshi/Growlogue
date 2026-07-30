@@ -15,6 +15,17 @@ const nextConfig: NextConfig = {
     "@growlogue/life-unlocks",
     "@growlogue/reports"
   ],
+  webpack(config) {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true
+    };
+    config.module.rules.push({
+      resourceQuery: /module/,
+      type: "webassembly/async"
+    });
+    return config;
+  },
   async rewrites() {
     return [
       {

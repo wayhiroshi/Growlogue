@@ -28,6 +28,8 @@ Cloudflareの対象アカウントを確認し、D1とWorkerを作成して`work
 - Wish追加・編集、複数AND条件、進捗表示、手入力Fact、Unlocked演出、Reward完了、Lucienコメントを実装する。
 - HomeへDreamsを追加し、現実の人生イベントをGrowlogueの報酬として見せる。
 - 収入、体重、資産などのFactは本人限定とし、共有やAI送信の対象外とする。
+- Life UnlocksのD1操作とCondition評価を非公開Workerへ分離し、Webは認証、入力検証、
+  公開APIだけを担当する。
 
 ## Phase 5以降
 

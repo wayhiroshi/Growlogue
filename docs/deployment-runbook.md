@@ -55,8 +55,8 @@ Migrationは不要。既存D1を本人認証後に都度集計する。OpenNext 
 
 Service Bindingは`REPORTS -> growlogue-reports`とする。Web Workerだけが公開APIを持ち、
 Reports WorkerへCookieや認証Secretを持たせない。ローカルでWorkers runtimeを
-確認する場合は、`pnpm preview:workers`でOpenNext build後にWebとReportsの2つの
-configをWranglerへ渡す。
+確認する場合は、`pnpm preview:workers`でOpenNext build後にWeb、Reports、AI、
+Life UnlocksのconfigをWranglerへ渡す。
 
 公開後に次を確認する。
 
@@ -102,7 +102,8 @@ configをWranglerへ渡す。
 - Scheduler変更: なし
 
 公開前にD1 Time Travelの復元可能時点を確認し、remote migrationの未適用一覧に
-`0005_life_unlocks.sql`だけが含まれることを確認する。migration適用後にWeb Workerを公開し、
+`0005_life_unlocks.sql`だけが含まれることを確認する。migration適用後、
+`growlogue-life-unlocks`を先に公開し、続いてService Bindingを持つWeb Workerを公開して、
 次を検証する。
 
 1. 未認証の`GET /api/v1/wishes`が401を返す。
@@ -111,6 +112,7 @@ configをWranglerへ渡す。
 4. 同じ`Idempotency-Key`でUnlockを再送しても`WishEvent`が増えない。
 5. Reward完了後にWishが`COMPLETED`となり、再読込後も保持される。
 6. iPhoneではSafariの共有メニューからホーム画面へ追加し、ホーム画面のWebアプリ内で通知を有効化できる案内が表示される。
+7. `growlogue-life-unlocks`にworkers.dev URLとpreview URLがなく、Web API経由だけで利用できる。
 
 問題時はWorkerを直前versionへ戻す。新テーブルは既存のHabit、Mission、XP、Streak、
 Pushデータから独立しているため、データを削除せず修正版migrationで前進する。

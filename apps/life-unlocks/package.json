@@ -1,0 +1,26 @@
+{
+  "name": "@growlogue/life-unlocks-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler deploy --dry-run",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "cf:typegen": "wrangler types --env-interface CloudflareEnv worker-configuration.d.ts",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@growlogue/life-unlocks": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260726.1",
+    "@types/node": "24.10.1",
+    "eslint": "9.39.2",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "wrangler": "4.114.0"
+  }
+}
