@@ -19,6 +19,12 @@ export const companions = [
     name: "Rowan（ローワン）",
     personality: "快活で機転が利く、庭園を愛する赤狐の執事",
     avatarUrl: "/images/companions/rowan.webp"
+  },
+  {
+    id: "character-attendant-cedric",
+    name: "Cedric（セドリック）",
+    personality: "寡黙で観察眼に優れ、書庫を守るハシビロコウの侍従",
+    avatarUrl: "/images/companions/cedric.webp"
   }
 ] as const;
 

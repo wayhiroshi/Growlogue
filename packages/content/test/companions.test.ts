@@ -2,6 +2,7 @@ import {
   britishGentlemanWorld,
   butlerMoodLabels,
   companionMoodArtwork,
+  companions,
   getEncoreLucienMessage,
   getCompanionArtwork,
   getHabitEncoreRule,
@@ -30,6 +31,18 @@ describe("companion mood artwork", () => {
 
   it("falls back for companions without mood variants", () => {
     expect(getCompanionArtwork("character-butler-rowan", "CALM")).toBeUndefined();
+    expect(
+      getCompanionArtwork("character-attendant-cedric", "CALM")
+    ).toBeUndefined();
+  });
+
+  it("includes Cedric as a selectable shoebill companion", () => {
+    expect(companions).toContainEqual({
+      id: "character-attendant-cedric",
+      name: "Cedric（セドリック）",
+      personality: "寡黙で観察眼に優れ、書庫を守るハシビロコウの侍従",
+      avatarUrl: "/images/companions/cedric.webp"
+    });
   });
 
   it("provides Japanese-first bilingual labels for every mood", () => {
