@@ -1,5 +1,6 @@
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
+import path from "node:path";
 
 initOpenNextCloudflareForDev();
 
@@ -16,13 +17,18 @@ const nextConfig: NextConfig = {
     "@growlogue/reports"
   ],
   webpack(config) {
-    config.experiments = {
-      ...config.experiments,
-      asyncWebAssembly: true
-    };
     config.module.rules.push({
+      test: /\.wasm$/u,
       resourceQuery: /module/,
-      type: "webassembly/async"
+      type: "javascript/auto",
+      use: [
+        {
+          loader: path.resolve(
+            process.cwd(),
+            "loaders/inline-wasm-module-loader.cjs"
+          )
+        }
+      ]
     });
     return config;
   },

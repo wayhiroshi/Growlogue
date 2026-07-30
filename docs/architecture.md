@@ -49,8 +49,9 @@ Service Binding `LIFE_UNLOCKS`へ送る。Cookie、Authorization、接続元IP�
 各SQLでもUser IDによる所有者条件を必須とする。
 
 Web WorkerはPrismaのWASMを扱えるWebpackビルドを使用する。Next.js設定で
-`asyncWebAssembly`と`?module`のWASM ruleを明示し、TurbopackによるPrisma／Better Auth
-チャンクの重複を避ける。OpenNext dry runの圧縮後サイズを公開前に確認する。
+`?module`のWASMをWorker内へ埋め込むloaderを明示し、Cloudflareで実行時ファイル参照が
+発生しないようにする。同時にTurbopackによるPrisma／Better Authチャンクの重複を避ける。
+OpenNext dry runの圧縮後サイズとWorkers previewの認証APIを公開前に確認する。
 
 ## API
 
