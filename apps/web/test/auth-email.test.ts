@@ -24,7 +24,7 @@ describe("password reset email", () => {
       text: string;
     };
     expect(headers.get("Authorization")).toBe("Bearer test-key");
-    expect(headers.get("Idempotency-Key")).toMatch(/^password-reset\/[a-f0-9]{64}$/);
+    expect(headers.get("Idempotency-Key")).toMatch(/^password-reset-[a-f0-9]{64}$/);
     expect(body.text).toContain("https://growlogue.example/reset?token=<secret>");
     expect(body.html).toContain("token=&lt;secret&gt;");
   });

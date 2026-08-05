@@ -40,7 +40,7 @@ export async function sendPasswordResetEmail({
     headers: {
       Authorization: `Bearer ${apiKey.trim()}`,
       "Content-Type": "application/json",
-      "Idempotency-Key": `password-reset/${await tokenDigest(token)}`
+      "Idempotency-Key": `password-reset-${await tokenDigest(token)}`
     },
     body: JSON.stringify({
       from,
