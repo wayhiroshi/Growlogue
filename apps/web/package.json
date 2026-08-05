@@ -10,7 +10,7 @@
     "test": "vitest run --config vitest.config.ts",
     "test:e2e": "playwright test",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --keep-vars",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy -- --keep-vars --minify",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv worker-configuration.d.ts",
     "db:migrate:local": "wrangler d1 migrations apply growlogue-db --local"
   },

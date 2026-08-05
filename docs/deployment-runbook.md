@@ -25,6 +25,9 @@
 4. OpenNext Workerを公開する。
 5. 公開URLを`BETTER_AUTH_URL`へ設定し、必要なら再公開する。
 
+Web Workerは無料プランの容量内に収めるため、公開時にWranglerの`--minify`を使用する。
+OpenNext dry runでもminify後のgzipサイズが3 MiB未満であることを確認する。
+
 R2はPhase 1〜4では使用しない。共有カード画像の保存が必要になるPhase 5で、利用料金と権限を再確認してから追加する。
 
 ## Phase 5 週間共有カード
