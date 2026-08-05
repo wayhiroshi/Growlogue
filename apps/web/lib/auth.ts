@@ -13,7 +13,7 @@ function requiredEnvironment(name: string): string {
 }
 
 export function getAuth() {
-  const { env, ctx } = getCloudflareContext();
+  const { env } = getCloudflareContext();
   const ownerEmail = requiredEnvironment("OWNER_EMAIL").trim().toLowerCase();
   const appUrl =
     process.env.BETTER_AUTH_URL ??
@@ -39,18 +39,16 @@ export function getAuth() {
         if (new URL(url).origin !== new URL(appUrl).origin) {
           throw new Error("Invalid password reset URL origin");
         }
-        ctx.waitUntil(
-          sendPasswordResetEmail({
-            apiKey: requiredEnvironment("RESEND_API_KEY"),
-            from:
-              process.env.AUTH_EMAIL_FROM ??
-              "Growlogue <growlogue@notify.aether42.com>",
-            replyTo: ownerEmail,
-            to: user.email,
-            url,
-            token
-          })
-        );
+        await sendPasswordResetEmail({
+          apiKey: requiredEnvironment("RESEND_API_KEY"),
+          from:
+            process.env.AUTH_EMAIL_FROM ??
+            "Growlogue <growlogue@notify.aether42.com>",
+          replyTo: ownerEmail,
+          to: user.email,
+          url,
+          token
+        });
       }
     },
     advanced: {
