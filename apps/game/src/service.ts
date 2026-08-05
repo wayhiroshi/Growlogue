@@ -1,10 +1,11 @@
 import {
   britishGentlemanWorld,
-  butlerMessages,
   categories,
   companions,
   getEncoreLucienMessage,
   getCompanionArtwork,
+  getCompanionMessage,
+  getCompanionTapResponses,
   getHabitEncoreRule,
   habitTemplates,
   type ButlerMood
@@ -456,7 +457,8 @@ export async function getDashboard(db: D1Database, userId: string) {
         getCompanionArtwork(characterState.character.id, mood) ??
         characterState.character.avatarUrl,
       mood,
-      message: butlerMessages[mood][0]
+      message: getCompanionMessage(characterState.character.id, mood),
+      tapResponses: getCompanionTapResponses(characterState.character.id)
     }
   };
 }

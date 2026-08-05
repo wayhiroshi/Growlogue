@@ -8,16 +8,11 @@ interface CompanionHeroProps {
   fullName: string;
   message: string;
   moodLabel: string;
+  tapResponses: readonly string[];
   completed: number;
   total: number;
   percent: number;
 }
-
-const tapResponses = [
-  "ええ、ここにおります。次の一歩も、ご一緒いたしましょう。",
-  "小さな達成ほど、丁寧に祝う価値がございます。",
-  "今日は今日の歩幅で。物語は逃げません。"
-];
 
 export function CompanionHero({
   avatarUrl,
@@ -25,6 +20,7 @@ export function CompanionHero({
   fullName,
   message,
   moodLabel,
+  tapResponses,
   completed,
   total,
   percent

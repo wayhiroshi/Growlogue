@@ -69,6 +69,7 @@ export default async function HomePage() {
           butlerMoodLabels[dashboard.character.mood] ?? dashboard.character.mood
         }
         percent={percent}
+        tapResponses={dashboard.character.tapResponses}
         total={dashboard.daily.totalMissions}
       />
 

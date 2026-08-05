@@ -5,7 +5,11 @@ import {
   companions,
   getEncoreLucienMessage,
   getCompanionArtwork,
+  getCompanionMessage,
+  getCompanionTapResponses,
   getHabitEncoreRule,
+  lawrenceMessages,
+  lawrenceTapResponses,
   type ButlerMood
 } from "../src/index";
 import { describe, expect, it } from "vitest";
@@ -29,11 +33,16 @@ describe("companion mood artwork", () => {
     }
   });
 
+  it("provides a Lawrence portrait for every mood", () => {
+    for (const mood of moods) {
+      expect(getCompanionArtwork("character-attendant-cedric", mood)).toBe(
+        companionMoodArtwork["character-attendant-cedric"][mood]
+      );
+    }
+  });
+
   it("falls back for companions without mood variants", () => {
     expect(getCompanionArtwork("character-butler-rowan", "CALM")).toBeUndefined();
-    expect(
-      getCompanionArtwork("character-attendant-cedric", "CALM")
-    ).toBeUndefined();
   });
 
   it("includes Lawrence as a selectable shoebill companion", () => {
@@ -50,6 +59,20 @@ describe("companion mood artwork", () => {
       expect(butlerMoodLabels[mood]).toMatch(/^[^A-Z]+ \/ [A-Z]+$/);
       expect(butlerMoodLabels[mood]).toContain(mood);
     }
+  });
+
+  it("gives Lawrence his own restrained mood and tap dialogue", () => {
+    for (const mood of moods) {
+      expect(getCompanionMessage("character-attendant-cedric", mood)).toBe(
+        lawrenceMessages[mood][0]
+      );
+    }
+    expect(getCompanionTapResponses("character-attendant-cedric")).toBe(
+      lawrenceTapResponses
+    );
+    expect(getCompanionTapResponses("character-butler-rowan")).not.toBe(
+      lawrenceTapResponses
+    );
   });
 
   it("enables encores only for the initial strength and English habits", () => {

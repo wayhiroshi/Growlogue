@@ -38,6 +38,15 @@ export const companionMoodArtwork = {
     WORRIED: "/images/companions/lucien-worried.webp",
     LONELY: "/images/companions/lucien-lonely.webp",
     SULKING: "/images/companions/lucien-sulking.webp"
+  },
+  "character-attendant-cedric": {
+    DELIGHTED: "/images/companions/lawrence-delighted.webp",
+    PROUD: "/images/companions/lawrence-proud.webp",
+    CHEERFUL: "/images/companions/lawrence-proud.webp",
+    CALM: "/images/companions/lawrence.webp",
+    WORRIED: "/images/companions/lawrence-worried.webp",
+    LONELY: "/images/companions/lawrence-worried.webp",
+    SULKING: "/images/companions/lawrence-sulking.webp"
   }
 } as const;
 
@@ -45,8 +54,13 @@ export function getCompanionArtwork(
   characterId: string,
   mood: ButlerMood
 ): string | undefined {
-  if (characterId !== britishGentlemanWorld.character.id) return undefined;
-  return companionMoodArtwork[britishGentlemanWorld.character.id][mood];
+  if (characterId === britishGentlemanWorld.character.id) {
+    return companionMoodArtwork[britishGentlemanWorld.character.id][mood];
+  }
+  if (characterId === "character-attendant-cedric") {
+    return companionMoodArtwork["character-attendant-cedric"][mood];
+  }
+  return undefined;
 }
 
 export const categories = [
@@ -186,6 +200,47 @@ export const butlerMessages: Record<ButlerMood, readonly string[]> = {
   LONELY: ["書斎のインク壺が、少し寂しそうにしております。"],
   SULKING: ["紅茶だけ淹れて帰る執事になってしまいました。"]
 };
+
+export const lawrenceMessages: Record<ButlerMood, readonly string[]> = {
+  DELIGHTED: ["全項目、確認しました。見事です。今日は胸を張ってよろしいでしょう。"],
+  PROUD: ["Daily Clearを確認しました。積み重ねは、確かに形になっています。"],
+  CHEERFUL: ["良い進みです。この調子で、次の一つを整えましょう。"],
+  CALM: ["本日の項目を確認しました。騒がず、一つずつ整えましょう。"],
+  WORRIED: ["無理をしていないか、それだけ確認させてください。最小の一歩で十分です。"],
+  LONELY: ["お戻りになるまで、記録を整えておきました。いつからでも再開できます。"],
+  SULKING: ["……紅茶は冷めましたが、記録は残してあります。続きをどうぞ。"]
+};
+
+const defaultCompanionTapResponses = [
+  "ええ、ここにおります。次の一歩も、ご一緒いたしましょう。",
+  "小さな達成ほど、丁寧に祝う価値がございます。",
+  "今日は今日の歩幅で。物語は逃げません。"
+] as const;
+
+export const lawrenceTapResponses = [
+  "はい。必要なことは、すでに確認しています。",
+  "騒がず、整えます。次の一つをどうぞ。",
+  "止まっても構いません。再開できる形にしておきます。"
+] as const;
+
+export function getCompanionMessage(
+  characterId: string,
+  mood: ButlerMood
+): string {
+  const messages =
+    characterId === "character-attendant-cedric"
+      ? lawrenceMessages[mood]
+      : butlerMessages[mood];
+  return messages[0] ?? butlerMessages.CALM[0] ?? "まずは小さな一歩から。";
+}
+
+export function getCompanionTapResponses(
+  characterId: string
+): readonly string[] {
+  return characterId === "character-attendant-cedric"
+    ? lawrenceTapResponses
+    : defaultCompanionTapResponses;
+}
 
 export const butlerNotificationTemplates = {
   MORNING: {
