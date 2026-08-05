@@ -41,6 +41,8 @@ pnpm dev
 | `OWNER_EMAIL` | 必須 | 初回登録を許可する本人メール |
 | `BETTER_AUTH_SECRET` | 必須 | セッション署名用Secret（32文字以上） |
 | `BETTER_AUTH_URL` | 必須 | 認証APIの公開オリジン |
+| `AUTH_EMAIL_FROM` | 必須 | 認証メールのFrom。既定は`Growlogue <growlogue@notify.aether42.com>` |
+| `RESEND_API_KEY` | 本番必須 | Growlogue専用・送信限定・`notify.aether42.com`限定のResend Secret |
 | `NEXT_PUBLIC_APP_URL` | 必須 | Webアプリの公開オリジン |
 
 AI伴走の環境変数と有効化手順は

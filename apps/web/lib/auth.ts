@@ -4,6 +4,7 @@ import { betterAuth } from "better-auth/minimal";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
+import { sendPasswordResetEmail } from "@/lib/auth-email";
 
 function requiredEnvironment(name: string): string {
   const value = process.env[name];
@@ -12,7 +13,7 @@ function requiredEnvironment(name: string): string {
 }
 
 export function getAuth() {
-  const { env } = getCloudflareContext();
+  const { env, ctx } = getCloudflareContext();
   const ownerEmail = requiredEnvironment("OWNER_EMAIL").trim().toLowerCase();
   const appUrl =
     process.env.BETTER_AUTH_URL ??
@@ -30,7 +31,27 @@ export function getAuth() {
       enabled: true,
       minPasswordLength: 12,
       maxPasswordLength: 128,
-      autoSignIn: true
+      autoSignIn: true,
+      resetPasswordTokenExpiresIn: 60 * 60,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async ({ user, url, token }) => {
+        if (user.email.trim().toLowerCase() !== ownerEmail) return;
+        if (new URL(url).origin !== new URL(appUrl).origin) {
+          throw new Error("Invalid password reset URL origin");
+        }
+        ctx.waitUntil(
+          sendPasswordResetEmail({
+            apiKey: requiredEnvironment("RESEND_API_KEY"),
+            from:
+              process.env.AUTH_EMAIL_FROM ??
+              "Growlogue <growlogue@notify.aether42.com>",
+            replyTo: ownerEmail,
+            to: user.email,
+            url,
+            token
+          })
+        );
+      }
     },
     advanced: {
       database: {
@@ -42,6 +63,15 @@ export function getAuth() {
       cookiePrefix: "growlogue"
     },
     trustedOrigins: [appUrl],
+    rateLimit: {
+      enabled: true,
+      customRules: {
+        "/request-password-reset": {
+          window: 15 * 60,
+          max: 3
+        }
+      }
+    },
     hooks: {
       before: createAuthMiddleware(async (context) => {
         if (context.path !== "/sign-up/email") return;

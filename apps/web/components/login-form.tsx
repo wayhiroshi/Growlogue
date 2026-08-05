@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "@/lib/auth-client";
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 export function LoginForm() {
@@ -81,6 +82,14 @@ export function LoginForm() {
             <span className="mt-1 block text-xs text-[#667269]">12文字以上</span>
           ) : null}
         </label>
+        {mode === "sign-in" ? (
+          <Link
+            className="block text-right text-sm font-bold text-[#173f35]"
+            href="/forgot-password"
+          >
+            パスワードを忘れた方
+          </Link>
+        ) : null}
         {error ? (
           <p role="alert" className="rounded-xl bg-[#f6e3df] p-3 text-sm text-[#8b3d32]">
             {error}

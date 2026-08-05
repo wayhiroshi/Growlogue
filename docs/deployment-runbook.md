@@ -18,7 +18,9 @@
 ## 作成と公開
 
 1. D1を作成し、返されたIDをWebとschedulerの`wrangler.jsonc`へ設定する。
-2. `OWNER_EMAIL`、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`をWorkers Secretsへ登録する。
+2. `OWNER_EMAIL`、`BETTER_AUTH_SECRET`、`BETTER_AUTH_URL`、Growlogue専用の
+   `RESEND_API_KEY`をWorkers Secretsへ登録する。Resendキーは送信限定かつ
+   `notify.aether42.com`限定にする。
 3. remote D1 migrationを適用する。
 4. OpenNext Workerを公開する。
 5. 公開URLを`BETTER_AUTH_URL`へ設定し、必要なら再公開する。
@@ -72,6 +74,9 @@ Life Unlocks、GameのconfigをWranglerへ渡す。
 ## 検証
 
 - 許可メールだけが初回登録できる。
+- 未登録メールへの再設定要求でも登録有無が画面へ表示されない。
+- 本人メールへ再設定リンクが届き、1時間以内に12文字以上の新しいパスワードへ変更できる。
+- 使用済み・期限切れリンクは拒否され、再設定後は既存セッションが無効になる。
 - 基本3件とボーナス2件が生成される。
 - 二重送信でもXPが一度だけ増える。
 - 再読込後もXP、能力値、Daily Clear、Perfect、連続記録が残る。
