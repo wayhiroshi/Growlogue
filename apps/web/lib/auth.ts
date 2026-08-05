@@ -35,7 +35,6 @@ export function getAuth() {
       resetPasswordTokenExpiresIn: 60 * 60,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url, token }) => {
-        if (user.email.trim().toLowerCase() !== ownerEmail) return;
         if (new URL(url).origin !== new URL(appUrl).origin) {
           throw new Error("Invalid password reset URL origin");
         }
