@@ -38,7 +38,7 @@ export async function sendPasswordResetEmail({
   const response = await fetcher("https://api.resend.com/emails", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${apiKey.trim()}`,
       "Content-Type": "application/json",
       "Idempotency-Key": `password-reset/${await tokenDigest(token)}`
     },

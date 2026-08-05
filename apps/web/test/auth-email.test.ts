@@ -8,7 +8,7 @@ describe("password reset email", () => {
     );
 
     await sendPasswordResetEmail({
-      apiKey: "test-key",
+      apiKey: "  test-key\n",
       from: "Growlogue <growlogue@notify.aether42.com>",
       replyTo: "owner@example.com",
       to: "owner@example.com",

@@ -35,19 +35,27 @@ export function getAuth() {
       resetPasswordTokenExpiresIn: 60 * 60,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url, token }) => {
-        if (new URL(url).origin !== new URL(appUrl).origin) {
-          throw new Error("Invalid password reset URL origin");
+        try {
+          if (new URL(url).origin !== new URL(appUrl).origin) {
+            throw new Error("Invalid password reset URL origin");
+          }
+          await sendPasswordResetEmail({
+            apiKey: requiredEnvironment("RESEND_API_KEY"),
+            from:
+              process.env.AUTH_EMAIL_FROM ??
+              "Growlogue <growlogue@notify.aether42.com>",
+            replyTo: ownerEmail,
+            to: user.email,
+            url,
+            token
+          });
+        } catch (error) {
+          console.error(
+            "Password reset email failed:",
+            error instanceof Error ? error.message : "Unknown error"
+          );
+          throw error;
         }
-        await sendPasswordResetEmail({
-          apiKey: requiredEnvironment("RESEND_API_KEY"),
-          from:
-            process.env.AUTH_EMAIL_FROM ??
-            "Growlogue <growlogue@notify.aether42.com>",
-          replyTo: ownerEmail,
-          to: user.email,
-          url,
-          token
-        });
       }
     },
     advanced: {
