@@ -36,12 +36,12 @@ describe("companion mood artwork", () => {
     ).toBeUndefined();
   });
 
-  it("includes Cedric as a selectable shoebill companion", () => {
+  it("includes Lawrence as a selectable shoebill companion", () => {
     expect(companions).toContainEqual({
       id: "character-attendant-cedric",
-      name: "Cedric（セドリック）",
-      personality: "寡黙で観察眼に優れ、書庫を守るハシビロコウの侍従",
-      avatarUrl: "/images/companions/cedric.webp"
+      name: "Lawrence（ロウレンス）",
+      personality: "寡黙で観察眼に優れ、確認と見守りを担うハシビロコウの筆頭執事",
+      avatarUrl: "/images/companions/lawrence.webp"
     });
   });
 

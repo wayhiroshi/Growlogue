@@ -21,10 +21,11 @@ export const companions = [
     avatarUrl: "/images/companions/rowan.webp"
   },
   {
+    // Keep the legacy ID so existing CharacterState rows remain valid.
     id: "character-attendant-cedric",
-    name: "Cedric（セドリック）",
-    personality: "寡黙で観察眼に優れ、書庫を守るハシビロコウの侍従",
-    avatarUrl: "/images/companions/cedric.webp"
+    name: "Lawrence（ロウレンス）",
+    personality: "寡黙で観察眼に優れ、確認と見守りを担うハシビロコウの筆頭執事",
+    avatarUrl: "/images/companions/lawrence.webp"
   }
 ] as const;
 
